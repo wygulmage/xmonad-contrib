@@ -1,8 +1,9 @@
-resolver: lts-7.19
+resolver: lts-14.10
 
 packages:
   - ./
-  - ../xmonad
+  - ./xmonad
+  #  - ../xmonad
 
 extra-deps:
   - X11-1.8

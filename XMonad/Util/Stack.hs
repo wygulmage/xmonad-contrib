@@ -222,7 +222,7 @@ sortByZ f = fromTags . sortBy (adapt f) . toTags
 -- | Map a function over a stack. The boolean argument indcates whether
 -- the current element is the focused one
 mapZ :: (Bool -> a -> b) -> Zipper a -> Zipper b
-mapZ f as = fromTags . map (mapE f) . toTags $ as
+mapZ f = fromTags . map (mapE f) . toTags
 
 -- | 'mapZ' without the 'Bool' argument
 mapZ_ :: (a -> b) -> Zipper a -> Zipper b
@@ -287,7 +287,8 @@ deleteFocusedZ = filterZ (\b _ -> not b)
 -- | Delete the ith element
 deleteIndexZ :: Int -> Zipper a -> Zipper a
 deleteIndexZ i z = let numbered = (fromTags . zipWith number [0..] . toTags) z
-                       number j ea = mapE (\_ a -> (j,a)) ea
+                       -- number j = mapE (\_ a -> (j,a))
+                       number j = mapE (const ((,) j))
                    in mapZ_ snd $ filterZ_ ((/=i) . fst) numbered
 
 -- ** Folds
@@ -320,9 +321,9 @@ foldlZ_ = foldlZ . const
 
 -- | Find whether an element is present in a stack.
 elemZ :: Eq a => a -> Zipper a -> Bool
-elemZ a as = foldlZ_ step False as
+elemZ a = foldlZ_ step False
     where step True _ = True
-          step False a' = a' == a
+          step False a' = a == a'
 
 
 -- * Other utility functions

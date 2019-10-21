@@ -69,7 +69,7 @@ data PointRectangle a = PointRectangle
 -- indices are unable to represent zero-dimension rectangles.
 --
 -- Consider pixels as indices. Do not use this on empty rectangles.
-pixelsToIndices :: Rectangle -> (PointRectangle Integer)
+pixelsToIndices :: Rectangle -> PointRectangle Integer
 pixelsToIndices (Rectangle px py dx dy) =
     PointRectangle (fromIntegral px)
                    (fromIntegral py)
@@ -77,7 +77,7 @@ pixelsToIndices (Rectangle px py dx dy) =
                    (fromIntegral py + fromIntegral dy - 1)
 
 -- | Consider pixels as @[N,N+1)@ coordinates. Available for empty rectangles.
-pixelsToCoordinates :: Rectangle -> (PointRectangle Integer)
+pixelsToCoordinates :: Rectangle -> PointRectangle Integer
 pixelsToCoordinates (Rectangle px py dx dy) =
     PointRectangle (fromIntegral px)
                    (fromIntegral py)
@@ -85,7 +85,7 @@ pixelsToCoordinates (Rectangle px py dx dy) =
                    (fromIntegral py + fromIntegral dy)
 
 -- | Invert 'pixelsToIndices'.
-indicesToRectangle :: (PointRectangle Integer) -> Rectangle
+indicesToRectangle :: PointRectangle Integer -> Rectangle
 indicesToRectangle (PointRectangle x1 y1 x2 y2) =
     Rectangle (fromIntegral x1)
               (fromIntegral y1)
@@ -93,7 +93,7 @@ indicesToRectangle (PointRectangle x1 y1 x2 y2) =
               (fromIntegral $ y2 - y1 + 1)
 
 -- | Invert 'pixelsToCoordinates'.
-coordinatesToRectangle :: (PointRectangle Integer) -> Rectangle
+coordinatesToRectangle :: PointRectangle Integer -> Rectangle
 coordinatesToRectangle (PointRectangle x1 y1 x2 y2) =
     Rectangle (fromIntegral x1)
               (fromIntegral y1)
@@ -198,8 +198,8 @@ withBorder t b r l i (Rectangle x y w h) =
 -- | Calculate the center - @(x,y)@ - as if the 'Rectangle' were bounded.
 center :: Rectangle -> (Ratio Integer,Ratio Integer)
 center (Rectangle x y w h) = (cx,cy)
-    where cx = fromIntegral x + (fromIntegral w) % 2
-          cy = fromIntegral y + (fromIntegral h) % 2
+    where cx = fromIntegral x + fromIntegral w % 2
+          cy = fromIntegral y + fromIntegral h % 2
 
 -- | Invert 'scaleRationalRect'. Since that operation is lossy a roundtrip
 -- conversion may not result in the original value. The first 'Rectangle' is

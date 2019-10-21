@@ -14,13 +14,15 @@
 
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module XMonad.Util.Loggers.NamedScratchpad (-- * Usage
-                                            -- $usage
-                                            nspTrackStartup
-                                           ,nspTrackHook
-                                           ,nspActiveIcon
-                                           ,nspActive
-                                           ,nspActive') where
+module XMonad.Util.Loggers.NamedScratchpad
+    -- * Usage
+    -- $usage
+    ( nspTrackStartup
+    , nspTrackHook
+    , nspActiveIcon
+    , nspActive
+    , nspActive'
+    ) where
 
 import XMonad.Core
 import Graphics.X11.Xlib (Window)
@@ -56,7 +58,9 @@ import qualified XMonad.StackSet as W (allWindows)
 -- them instead (see 'XMonad.Util.NoTaskbar').
 
 -- The extension data for tracking NSP windows
-data NSPTrack = NSPTrack [Maybe Window] deriving Typeable
+-- data NSPTrack = NSPTrack [Maybe Window] deriving Typeable
+newtype NSPTrack = NSPTrack [Maybe Window] deriving Typeable
+
 instance ExtensionClass NSPTrack where
   initialValue = NSPTrack []
 
@@ -88,10 +92,10 @@ scratchpadWindow ns = foldM sp' Nothing (zip [0..] ns)
 --
 -- > , handleEventHook = ... <+> nspTrackHook scratchpads
 nspTrackHook :: [NamedScratchpad] -> Event -> X All
-nspTrackHook _ (DestroyWindowEvent {ev_window = w}) = do
+nspTrackHook _ DestroyWindowEvent{ ev_window = w } = do
   XS.modify $ \(NSPTrack ws) -> NSPTrack $ map (\sw -> if sw == Just w then Nothing else sw) ws
   return (All True)
-nspTrackHook ns (ConfigureRequestEvent {ev_window = w}) = do
+nspTrackHook ns ConfigureRequestEvent{ ev_window = w } = do
   NSPTrack ws <- XS.get
   ws' <- forM (zip3 [0..] ws ns) $ \(_,w',NS _ _ q _) -> do
     p <- runQuery q w
@@ -103,7 +107,7 @@ nspTrackHook _ _ = return (All True)
 -- | 'Logger' for scratchpads' state, using Unicode characters as "icons".
 --
 -- > , ppExtras = [..., nspActive' iconChars showActive showInactive, ...]
-nspActiveIcon :: [Char] -> (String -> String) -> (String -> String) -> Logger
+nspActiveIcon :: String -> (String -> String) -> (String -> String) -> Logger
 nspActiveIcon icns act inact = do
   NSPTrack ws <- XS.get
   return $ if null ws

@@ -31,13 +31,13 @@ withStringProp prop dpy f = do
     f rootw a
 
 -- | Set the value of a string property.
-setStringProp :: (MonadIO m) => Display -> StringProp -> [Char] -> m ()
+setStringProp :: (MonadIO m) => Display -> StringProp -> String -> m ()
 setStringProp dpy prop string =
   withStringProp prop dpy $ \rootw a ->
     io $ changeProperty8 dpy rootw a a propModeReplace $ map castCharToCChar string
 
 -- | Get the name of a string property and returns it as a 'Maybe'.
-getStringProp :: (MonadIO m) => Display -> StringProp -> m (Maybe [Char])
+getStringProp :: (MonadIO m) => Display -> StringProp -> m (Maybe String)
 getStringProp dpy prop =
   withStringProp prop dpy $ \rootw a -> do
     p <- io $ getWindowProperty8 dpy a rootw
