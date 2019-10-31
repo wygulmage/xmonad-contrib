@@ -332,6 +332,7 @@ library
                         XMonad.Util.NamedScratchpad
                         XMonad.Util.NamedWindows
                         XMonad.Util.NoTaskbar
+                        XMonad.Util.Optics
                         XMonad.Util.Paste
                         XMonad.Util.PositionStore
                         XMonad.Util.PureX
