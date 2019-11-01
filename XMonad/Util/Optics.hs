@@ -73,8 +73,8 @@ _xConfig f s = (\ x -> s{ config = x }) <$> f (config s)
 _currentEvent :: Simple Lens XConf (Maybe Event)
 _currentEvent f s = (\ x -> s{ currentEvent = x }) <$> f (currentEvent s)
 
-_display :: Simple Lens XConf Display
-_display f s = (\ x -> s{ display = x }) <$> f (display s)
+instance HasDisplay XConf where
+    _display f s = (\ x -> s{ display = x }) <$> f (display s)
 
 _focusedBorder, _normalBorder :: Simple Lens XConf Pixel
 _focusedBorder f s = (\ x -> s{ focusedBorder = x }) <$> f (focusedBorder s)
@@ -89,8 +89,8 @@ _mouseFocused f s = (\ x -> s{ mouseFocused = x }) <$> f (mouseFocused s)
 _mousePosition :: Simple Lens XConf (Maybe (Position, Position))
 _mousePosition f s = (\ x -> s{ mousePosition = x }) <$> f (mousePosition s)
 
-_theRoot :: Simple Lens XConf Window
-_theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
+instance HasTheRoot XConf where
+    _theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
 
 instance HasWorkspaceNames XConf where
   _workspaceNames = _xConfig . _workspaceNames
@@ -343,7 +343,13 @@ instance HasWindows
 ------- Optic Classes -------
 
 ----- Lens Classes -----
--- These are all too polymorphic, because the types they represent in XMonad are too polymorphic. Please respect the types they /should/ have.
+-- Many of these are all too polymorphic, because the types they represent in XMonad are too polymorphic. Please respect the types they /should/ have.
+
+class HasDisplay ta where
+    _display :: Simple Lens ta Display
+
+class HasTheRoot ta where
+    _theRoot :: Simple Lens ta Window
 
 class HasLayout ta tb a b
     | ta -> a, tb -> b

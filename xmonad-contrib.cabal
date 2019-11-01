@@ -333,6 +333,8 @@ library
                         XMonad.Util.NamedWindows
                         XMonad.Util.NoTaskbar
                         XMonad.Util.Optics
+                        XMonad.Util.Optics.Classy
+                        XMonad.Util.Optics.Types
                         XMonad.Util.Paste
                         XMonad.Util.PositionStore
                         XMonad.Util.PureX
