@@ -25,25 +25,25 @@ type Simple o ta a = o ta ta a a
 -- StackSet uses types like `Screen i l a s sd` when it should probably use monomorphic types like `Screen` with i, l, a, s, and sd instantiated as WorkspaceId, Layout Window, Window, ScreenId, and ScreenDetail, respectively.
 -- As a result, the classy lenses use functional dependencies and it's all really ugly and too permissive. The type families below are a sort of stopgap to say what should be what and what their relations are to each other, without breaking existing code.
 
-type ScreenOf a = Screen (WorkspaceIdOf a) (LayoutOf a) (WindowOf a) (ScreenIdOf a) (ScreenDetailOf a)
+type ScreenOf a = Screen (WorkspaceIdOf a) (LayoutOf a (WindowOf a)) (WindowOf a) (ScreenIdOf a) (ScreenDetailOf a)
 
-type WorkspaceOf a = Workspace (WorkspaceIdOf a) (LayoutOf a) (WindowOf a)
+type WorkspaceOf a = Workspace (WorkspaceIdOf a) (LayoutOf a (WindowOf a)) (WindowOf a)
 
-type family LayoutOf a
-type instance LayoutOf (Layout window) = Layout window
-type instance LayoutOf (Workspace tag layout window) = layout
-type instance LayoutOf (Screen tag layout window screenID screenDimensions)
-    = layout
-type instance LayoutOf (StackSet tag layout window screenID screenDimensions)
-    = layout
-type instance LayoutOf (XConfig l) = l Window
-type instance LayoutOf XConf = Layout Window
-type instance LayoutOf XState = Layout Window
+type family LayoutOf a where
+    LayoutOf (Layout window) = Layout
+    LayoutOf (Workspace tag (layout window) window) = layout
+    LayoutOf (Screen tag (layout window) window screenID screenDimensions)
+        = layout
+    LayoutOf (StackSet tag (layout window) window screenID screenDimensions)
+        = layout
+    LayoutOf (XConfig layout) = layout
+    LayoutOf XConf = Layout
+    LayoutOf XState = Layout
 
 type family WorkspaceIdOf a
 type instance WorkspaceIdOf WorkspaceId = WorkspaceId
 type instance WorkspaceIdOf (Workspace tag layout window) = tag
-type instance WorkspaceIdOf (Screen tag layout window screenID screenDimensions)
+type instance WorkspaceIdOf (Screen tag layout layout screenID screenDimensions)
     = tag
 type instance WorkspaceIdOf (StackSet tag layout window screenID screenDimensions)
     = tag

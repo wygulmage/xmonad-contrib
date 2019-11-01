@@ -22,14 +22,8 @@
   #-}
 
 module XMonad.Util.Optics
-    ( HasLayout, _layout
-    , HasLayouts, _layouts
-    , HasStack, _stack
-    , HasTags, _tags
-    , HasWindows, _windows
-    , HasWorkspaceNames, _workspaceNames
     -- XConf Lenses:
-    , _buttonActions
+    ( _buttonActions
     , _xConfig
     , _currentEvent
     , _display
@@ -38,10 +32,41 @@ module XMonad.Util.Optics
     , _mouseFocused
     , _mousePosition
     , _theRoot
+    -- XConfig Lenses:
+    , _focusedBorderColor, _normalBorderColor
+    , _handleEventHook
+    , _keys
+    , _layoutHook
+    , _manageHook
+    , _modMask
+    , _terminal
+    , _workspaceNames
     -- XState
     , _dragging
+    , _extensibleState
+    , _mapped
+    , _waitingUnmap
+    , _numberlockMask
+    , _windowset
     -- StackSet (WindowSet)
+    , _current
+    , _floating
+    , _screens
+    , _visible
+    , _workspaces
+    -- Screen
+    , _screenId
+    , _screenDetail
+    , _workspace
+    -- Workspace
+    , _layout
+    , _stack
+    , _tag
     -- Stack (Zipper)
+    , _focus
+    , _up
+    , _down
+    , traverseStack
     ) where
 
 import Control.Applicative ((<**>))
@@ -73,8 +98,8 @@ _xConfig f s = (\ x -> s{ config = x }) <$> f (config s)
 _currentEvent :: Simple Lens XConf (Maybe Event)
 _currentEvent f s = (\ x -> s{ currentEvent = x }) <$> f (currentEvent s)
 
-instance HasDisplay XConf where
-    _display f s = (\ x -> s{ display = x }) <$> f (display s)
+_display :: Simple Lens XConf Display
+_display f s = (\ x -> s{ display = x }) <$> f (display s)
 
 _focusedBorder, _normalBorder :: Simple Lens XConf Pixel
 _focusedBorder f s = (\ x -> s{ focusedBorder = x }) <$> f (focusedBorder s)
@@ -89,11 +114,8 @@ _mouseFocused f s = (\ x -> s{ mouseFocused = x }) <$> f (mouseFocused s)
 _mousePosition :: Simple Lens XConf (Maybe (Position, Position))
 _mousePosition f s = (\ x -> s{ mousePosition = x }) <$> f (mousePosition s)
 
-instance HasTheRoot XConf where
-    _theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
-
-instance HasWorkspaceNames XConf where
-  _workspaceNames = _xConfig . _workspaceNames
+_theRoot :: Simple Lens XConf Window
+_theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
 
 --- XConfig Optics:
 
@@ -123,8 +145,8 @@ _modMask f s = (\ x -> s{ modMask = x }) <$> f (modMask s)
 _terminal :: Simple Lens (XConfig layout) String
 _terminal f s = (\ x -> s{ terminal = x }) <$> f (terminal s)
 
-instance HasWorkspaceNames (XConfig layout) where
-    _workspaceNames f s = (\ x -> s{ workspaces = x }) <$> traverse f (workspaces s)
+_workspaceNames :: Simple Lens (XConfig layout) [String]
+_workspaceNames f s = (\ x -> s{ workspaces = x }) <$> f (workspaces s)
 
 
 --- XState Optics:
@@ -161,9 +183,8 @@ _up, _down :: Simple Lens (Stack a) [a]
 _up f s = (\ x -> s{ up = x }) <$> f (up s)
 _down f s = (\ x -> s{ down = x }) <$> f (down s)
 
-instance HasWindows (Stack a) (Stack b) a b where
-    -- This is the missing `Traversable` instance for Stack.
-    _windows f s =
+traverseStack :: Traversal (Stack a) (Stack b) a b
+traverseStack f s =
         (\ xu x xd -> s{ up = xu, focus = x, down = xd })
         <$> backwardsF (up s)
         <*> f (focus s)
@@ -222,32 +243,35 @@ _workspaces f s =
     <*> (traverse . _workspace) f (visible s)
     <*> traverse f (hidden s)
 
-instance HasLayouts
+_tags :: Traversal
+    (StackSet tag layout window screenID screenDimensions)
+    (StackSet tag' layout window screenID screenDimensions)
+    tag
+    tag'
+_tags = _workspaces . _tag
+
+_layouts :: Traversal
     (StackSet tag layout window screenID screenDimensions)
     (StackSet tag layout' window screenID screenDimensions)
     layout
     layout'
-  where
-    _layouts = _workspaces . _layouts
-
+_layouts = _workspaces . _layout
 
 --- Screen Lenses:
 
-instance HasScreenId
+_screenId :: Lens
     (Screen tag layout window screenID screenDimensions)
     (Screen tag layout window screenID' screenDimensions)
     screenID
     screenID'
-  where
-    _screenId f s = (\ x -> s{ screen = x }) <$> f (screen s)
+_screenId f s = (\ x -> s{ screen = x }) <$> f (screen s)
 
-instance HasScreenDetail
+_screenDetail :: Lens
     (Screen tag layout window screenID screenDimensions)
     (Screen tag layout window screenID screenDimensions')
     screenDimensions
     screenDimensions'
-  where
-    _screenDetail f s = (\ x -> s{ screenDetail = x }) <$> f (screenDetail s)
+_screenDetail f s = (\ x -> s{ screenDetail = x }) <$> f (screenDetail s)
 
 _workspace :: Lens
     (Screen tag layout window screenID screenDimensions)
@@ -256,157 +280,25 @@ _workspace :: Lens
     (Workspace tag' layout' window')
 _workspace f s = (\ x -> s{ workspace = x }) <$> f (workspace s)
 
-instance HasLayout
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout' window screenID screenDimensions)
-    layout
-    layout'
-  where
-    _layout = _workspace . _layout
-
-instance HasLayouts
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout' window screenID screenDimensions)
-    layout
-    layout'
-  where
-    _layouts = _workspace . _layouts
-
-instance HasWindows
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout window screenID screenDimensions)
-    window
-    window
-  where
-    _windows = _workspace . _windows
-
-instance HasTag
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout window screenID screenDimensions)
-    tag
-    tag'
-  where
-    _tag = _workspace . _tag
-
-instance HasTags
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout window screenID screenDimensions)
-    tag
-    tag'
-  where
-    _tags = _workspace . _tags
-
 
 --- Workspace Lenses:
 
-instance HasLayout
+_layout :: Lens
     (Workspace tag layout window) (Workspace tag layout' window)
     layout layout'
-  where
-    _layout f s = (\ x -> s{ layout = x }) <$> f (layout s)
+_layout f s = (\ x -> s{ layout = x }) <$> f (layout s)
 
-instance HasStack
+_stack :: Lens
     (Workspace tag layout window) (Workspace tag layout window')
-    window window'
-  where
-    _stack f s = (\ x -> s{ stack = x }) <$> f (stack s)
+    (Maybe (Stack window)) (Maybe (Stack window'))
+_stack f s = (\ x -> s{ stack = x }) <$> f (stack s)
 
-instance HasTag
+_tag :: Lens
     (Workspace workspaceID layout window)
     (Workspace workspaceID' layout window)
     workspaceID
     workspaceID'
-  where
-    _tag f s = (\ x -> s{ tag = x }) <$> f (tag s)
-
-instance HasTags
-    (Workspace workspaceID layout window)
-    (Workspace workspaceID' layout window)
-    workspaceID
-    workspaceID'
-  where
-    _tags = _tag
-
-instance HasLayouts
-    (Workspace tag layout window) (Workspace tag layout' window)
-    layout layout'
-  where
-    _layouts = _layout
-
-instance HasWindows
-    (Workspace tag layout window) (Workspace tag layout window)
-    window window
-  where
-    _windows = _stack . traverse . _windows
-
-
-------- Optic Classes -------
-
------ Lens Classes -----
--- Many of these are all too polymorphic, because the types they represent in XMonad are too polymorphic. Please respect the types they /should/ have.
-
-class HasDisplay ta where
-    _display :: Simple Lens ta Display
-
-class HasTheRoot ta where
-    _theRoot :: Simple Lens ta Window
-
-class HasLayout ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _layout :: Lens ta tb a b
-
-class HasScreenId ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _screenId :: Lens ta tb a b
-    -- Should be `_screenId :: Simple Lens ta ScreenId`
-
-class HasScreenDetail ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _screenDetail :: Lens ta tb a b
-    -- Should be `_screenDetail :: Simple Lens ta ScreenDetail`
-
--- HasStack might be better named 'MayHaveStack'.
-class HasStack ta tb a b | ta -> a, tb -> b, ta b -> tb, tb a -> ta where
-    _stack :: Lens ta tb (Maybe (Stack a)) (Maybe (Stack b))
-
-class HasTag ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _tag :: Lens ta tb a b
-    -- Should be `_workspaceId :: Simple Lens ta WorkspaceId`
-
-
------ Traversal Classes
-
-class HasLayouts ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _layouts :: Traversal ta tb a b
-
-class HasTags ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _tags :: Traversal ta tb a b
-
-class HasWindows ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _windows :: Traversal ta tb a b
-    -- should be `_windows :: Simple Traversal ta Window`
-
-class HasWorkspaceNames ta where
-  -- `_workspaceNames` is used so that `_workspaces` can be the Traversal of Workspaces.
-  _workspaceNames :: Simple Traversal ta String
+_tag f s = (\ x -> s{ tag = x }) <$> f (tag s)
 
 
 ------- Non-exported Types (for documentation) --------
