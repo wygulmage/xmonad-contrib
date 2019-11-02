@@ -20,6 +20,7 @@
   , FlexibleContexts
   , FlexibleInstances
   , FunctionalDependencies
+  , LiberalTypeSynonyms
   , MultiParamTypeClasses
   , NoImplicitPrelude
   , RankNTypes
@@ -28,27 +29,32 @@
   #-}
 
 module XMonad.Util.Optics.Classy
-    -- ( HasLayout, _layout
-    -- , HasLayouts, _layouts
-    -- , HasStack, _stack
-    -- , HasTags, _tags
-    -- , HasWindows, _windows
-    -- , HasWorkspaceNames, _workspaceNames
+    ( HasLayout, _layout
+    , HasLayouts, _layouts
+    , HasTags, _tags
+    , HasWindows, _windows
+    , HasWorkspaceNames, _workspaceNames
     -- -- XConf Lenses:
-    -- , _buttonActions
-    -- , _xConfig
-    -- , _currentEvent
-    -- , _display
-    -- , _focusedBorder, _normalBorder
-    -- , _keyActions
-    -- , _mouseFocused
-    -- , _mousePosition
-    -- , _theRoot
+    , HasButtonActions, _buttonActions
+    , HasXConfig, _xConfig
+    , HasCurrentEvent, _currentEvent
+    , HasDisplay, _display
+    , HasBorder, _focusedBorder, _normalBorder
+    , HasKeyActions, _keyActions
+    , HasMouseFocused, _mouseFocused
+    , HasMousePosition, _mousePosition
+    , HasTheRoot, _theRoot
     -- -- XState
-    -- , _dragging
+    , HasDragging, _dragging
     -- StackSet (WindowSet)
+    -- Screen
+    , HasScreenId, _screenId
+    , HasScreenDetail, _screenDetail
+    -- Workspace
+    , HasStack, _stack
+    , HasTag, _tag
     -- Stack (Zipper)
-    -- )
+    )
   where
 
 --- Classes:
@@ -68,11 +74,11 @@ import Graphics.X11.Xlib
     (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
 import Graphics.X11.Xlib.Extras (Event)
 import XMonad.Core
-    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WorkspaceId, X, XConf (..), XConfig (..), XState (..))
+    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WindowSpace, WorkspaceId, X, XConf (..), XConfig (..), XState (..))
 import XMonad.StackSet
     (RationalRect (..), Screen (..), Stack (..), StackSet (..), Workspace (..))
 import XMonad.Util.Optics.Types
-    (Traversal, Lens, Simple, ScreenOf, WorkspaceOf, LayoutOf, ScreenDetailOf, ScreenIdOf, WindowOf, WorkspaceIdOf)
+    (Traversal, Lens, Simple, ScreenOf, WorkspaceOf, ALayoutOf, ScreenDetailOf, ScreenIdOf, WindowOf, WorkspaceIdOf)
 
 --- Functions:
 import Data.Function (flip)
@@ -100,7 +106,7 @@ class HasTheRoot ta where
     _theRoot :: Simple Lens ta Window
 
 class
-    (a ~ LayoutOf ta (WindowOf ta), b ~ LayoutOf tb (WindowOf tb)) =>
+    (a ~ ALayoutOf ta, b ~ ALayoutOf tb) =>
     HasLayout ta tb a b
     | ta -> a, tb -> b -- This is also given by the constraints above.
     , ta b -> tb, tb a -> ta
@@ -130,6 +136,7 @@ class
     (a ~ WindowOf ta, b ~ WindowOf tb) =>
     HasStack ta tb a b | ta -> a, tb -> b, ta b -> tb, tb a -> ta where
     _stack :: Lens ta tb (Maybe (Stack a)) (Maybe (Stack b))
+    -- Should be `Simple Lens ta (Maybe Stack Window)`
 
 class
     (a ~ WorkspaceIdOf ta, b ~ WorkspaceIdOf tb) =>
@@ -173,7 +180,7 @@ class HasHandleEventHook ta where
     _handleEventHook :: Simple Lens ta (Event -> X All)
 
 class
-    (a ~ LayoutOf ta (WindowOf ta), b ~ LayoutOf tb (WindowOf tb)) =>
+    (a ~ ALayoutOf ta, b ~ ALayoutOf tb) =>
     HasLayoutHook ta tb a b
     | ta -> a, tb -> b, ta b -> tb, tb a -> ta
   where
@@ -214,7 +221,7 @@ class HasZipper ta where
 ----- Traversal Classes
 
 class
-    (a ~ LayoutOf ta (WindowOf ta), b ~ LayoutOf tb (WindowOf tb)) =>
+    (a ~ ALayoutOf ta, b ~ ALayoutOf tb) =>
     HasLayouts ta tb a b
     | ta -> a, tb -> b
     , ta b -> tb, tb a -> ta
@@ -241,7 +248,7 @@ class
 
 class HasWorkspaceNames ta where
   -- `_workspaceNames` is used so that `_workspaces` can be the Traversal of Workspaces.
-  _workspaceNames :: Simple Lens ta [String]
+  _workspaceNames :: Simple Lens ta [WorkspaceId]
 
 class
     (a ~ ScreenOf ta, b ~ ScreenOf tb) =>
@@ -253,9 +260,9 @@ class
     _visible :: (ta ~ tb, a ~ b) => Lens ta tb [a] [b]
     -- ^ all inactive visible items
     _screens :: Lens ta tb (NonEmpty a) (NonEmpty b)
--- ^ A Lens to a non-empty list of Screens, starting with the focused screen
--- to traverse the Screens, use `_screens . traverse`.
--- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
+    -- ^ A Lens to a non-empty list of Screens, starting with the focused screen
+    -- to traverse the Screens, use `_screens . traverse`.
+    -- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
 
 
 class HasFloating ta where
@@ -271,7 +278,8 @@ class
   where
     _workspaces :: Traversal ta tb a b
 
------ XMonad.Core types -----
+
+----- XMonad.Core -----
 
 --- XConf instances:
 
@@ -294,7 +302,6 @@ instance HasBorder XConf where
 instance HasKeyActions XConf where
     _keyActions = O._keyActions
 
-
 instance HasMouseFocused XConf where
     _mouseFocused = O._mouseFocused
 
@@ -310,8 +317,8 @@ instance HasWorkspaceNames XConf where
 --- XConfig Optics:
 
 instance HasBorderColor (XConfig layout) where
-   _focusedBorderColor = O._focusedBorderColor
-   _normalBorderColor = O._normalBorderColor
+    _focusedBorderColor = O._focusedBorderColor
+    _normalBorderColor = O._normalBorderColor
 
 instance HasHandleEventHook (XConfig layout) where
     _handleEventHook = O._handleEventHook
@@ -366,12 +373,7 @@ instance HasVisible
     _current = _windowset . _current
     _visible = _windowset . _visible
 
-instance HasWorkspaces
-    XState
-    XState
-    (Workspace WorkspaceId (Layout Window) Window)
-    (Workspace WorkspaceId (Layout Window) Window)
-  where
+instance HasWorkspaces XState XState WindowSpace WindowSpace where
     _workspaces = _windowset . _workspaces
 
 ----- Optics for XMonad.StackSet -----
@@ -387,21 +389,11 @@ instance HasZipper (Stack a) where
 instance HasWindows (Stack a) (Stack b) a b where
     -- This is the missing `Traversable` instance for Stack.
     _windows = O.traverseStack
-    -- _windows f s =
-    --     (\ xu x xd -> s{ up = xu, focus = x, down = xd })
-    --     <$> backwardsF (up s)
-    --     <*> f (focus s)
-    --     <*> traverse f (down s)
-    --     where
-    --       backwardsF (x : xs) = (:) <$> f x >*< backwardsF xs
-    --       backwardsF _ = pure []
-    --       (>*<) = flip (<**>)
-    --       infixl 4 >*<
 
 
 --- StackSet Lenses:
 
-instance HasWindowSet (StackSet WorkspaceId (Layout Window) Window ScreenId ScreenDetail)
+instance HasWindowSet WindowSet
   where
     _windowset = id
 
@@ -509,9 +501,6 @@ instance HasTags
 --- Workspace Lenses:
 
 instance
-    ( layout ~ LayoutOf (Workspace tag layout window) window
-    , layout' ~ LayoutOf (Workspace tag layout window) window
-    ) =>
     HasLayout
     (Workspace tag layout window) (Workspace tag layout' window)
     layout layout'
@@ -540,10 +529,7 @@ instance HasTags
   where
     _tags = _tag
 
-instance
-    ( layout ~ LayoutOf (Workspace tag layout window) window
-    , layout' ~ LayoutOf (Workspace tag layout' window) window) =>
-    HasLayouts
+instance HasLayouts
     (Workspace tag layout window) (Workspace tag layout' window)
     layout layout'
   where

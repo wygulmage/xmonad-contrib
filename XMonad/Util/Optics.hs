@@ -15,8 +15,7 @@
 {-# LANGUAGE
     FlexibleContexts
   , FlexibleInstances
-  , FunctionalDependencies
-  , MultiParamTypeClasses
+  , LiberalTypeSynonyms
   , RankNTypes
   , ScopedTypeVariables
   #-}
@@ -199,8 +198,8 @@ traverseStack f s =
 --- StackSet Lenses:
 
 _current :: Simple Lens
-    (StackSet tag (layout window) window screenID screenDimensions)
-    (Screen tag (layout window) window screenID screenDimensions)
+    (StackSet tag layout window screenID screenDimensions)
+    (Screen tag layout window screenID screenDimensions)
 _current f s = (\ x -> s{ current = x }) <$> f (current s)
 
 _floating :: Simple Lens
