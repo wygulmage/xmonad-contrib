@@ -52,6 +52,7 @@ module XMonad.Util.Optics
     , _floating
     , _screens
     , _visible
+    , _hidden
     , _workspaces
     -- Screen
     , _screenId

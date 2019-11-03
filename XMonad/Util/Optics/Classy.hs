@@ -15,18 +15,16 @@
 -- 2. Classy optics provide fine-grained constraints on a function's capabilities.
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-    ConstraintKinds
-  , FlexibleContexts
-  , FlexibleInstances
-  , FunctionalDependencies
-  , LiberalTypeSynonyms
-  , MultiParamTypeClasses
-  , NoImplicitPrelude
-  , RankNTypes
-  , ScopedTypeVariables
-  , TypeFamilies
-  #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LiberalTypeSynonyms    #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeFamilies           #-}
 
 module XMonad.Util.Optics.Classy
     ( HasLayout, _layout
@@ -34,7 +32,6 @@ module XMonad.Util.Optics.Classy
     , HasTags, _tags
     , HasWindows, _windows
     , HasWorkspaceNames, _workspaceNames
-    -- -- XConf Lenses:
     , HasButtonActions, _buttonActions
     , HasXConfig, _xConfig
     , HasCurrentEvent, _currentEvent
@@ -44,44 +41,40 @@ module XMonad.Util.Optics.Classy
     , HasMouseFocused, _mouseFocused
     , HasMousePosition, _mousePosition
     , HasTheRoot, _theRoot
-    -- -- XState
     , HasDragging, _dragging
-    -- StackSet (WindowSet)
-    -- Screen
+    , HasVisible, _current, _visible, _screens
+    , HasHidden, _hidden
+    , HasFloating, _floating
+    , HasWorkspaces, _workspaces
     , HasScreenId, _screenId
     , HasScreenDetail, _screenDetail
-    -- Workspace
     , HasStack, _stack
     , HasTag, _tag
-    -- Stack (Zipper)
+    , HasZipper, _focus, _up, _down
     )
   where
 
 --- Classes:
-import Control.Applicative (Applicative ((<*>), pure), (<**>))
-import Control.Category ((.), id)
-import Data.Functor (Functor, (<$>))
+import Control.Category (id, (.))
+import Data.Functor ((<$>))
 import Data.Traversable (traverse)
-import XMonad.Core (LayoutClass)
 
 --- Types:
-import Prelude (Bool, Either, Int, Maybe, String)
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
 import Data.Semigroup (All)
 import Data.Set (Set)
 import Graphics.X11.Xlib
     (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
 import Graphics.X11.Xlib.Extras (Event)
+import Prelude (Bool, Either, Int, Maybe, String)
 import XMonad.Core
-    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WindowSpace, WorkspaceId, X, XConf (..), XConfig (..), XState (..))
-import XMonad.StackSet
-    (RationalRect (..), Screen (..), Stack (..), StackSet (..), Workspace (..))
+    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WindowSpace, WorkspaceId, X, XConf, XConfig, XState)
+import XMonad.StackSet (RationalRect, Screen, Stack, StackSet, Workspace)
 import XMonad.Util.Optics.Types
-    (Traversal, Lens, Simple, ScreenOf, WorkspaceOf, ALayoutOf, ScreenDetailOf, ScreenIdOf, WindowOf, WorkspaceIdOf)
+    (ALayoutOf, Lens, ScreenDetailOf, ScreenIdOf, ScreenOf, Simple, Traversal, WindowOf, WorkspaceIdOf, WorkspaceOf)
 
 --- Functions:
-import Data.Function (flip)
 import qualified XMonad.Util.Optics as O
 
 
@@ -401,7 +394,7 @@ instance HasFloating (StackSet tag layout window screenID screenDimensions) wher
     _floating = O._floating
 
 instance HasHidden (StackSet tag layout window screenID screenDimensions) where
-    _hidden f s = (\ x -> s{ hidden = x }) <$> f (hidden s)
+    _hidden = O._hidden
 
 instance HasVisible
     (StackSet tag layout window screenID screenDimensions)
