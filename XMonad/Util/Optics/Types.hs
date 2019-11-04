@@ -8,6 +8,7 @@ module XMonad.Util.Optics.Types where
 
 import Control.Applicative (Applicative)
 import Data.Functor (Functor)
+import Prelude (Maybe)
 
 import Graphics.X11.Xlib (Window)
 import XMonad.Core (Layout, ScreenDetail, ScreenId, WindowSet, WorkspaceId, XConf, XConfig, XState)
@@ -48,6 +49,8 @@ type instance ALayoutOf (StackSet tag alayout window screenID screenDimensions) 
 type instance ALayoutOf (XConfig layout) = layout Window
 type instance ALayoutOf XConf = Layout Window
 type instance ALayoutOf XState = Layout Window
+type instance ALayoutOf (Maybe a) = ALayoutOf a
+type instance ALayoutOf [a] = ALayoutOf a
 
 type family WorkspaceIdOf a
 type instance WorkspaceIdOf WorkspaceId = WorkspaceId
@@ -59,6 +62,7 @@ type instance WorkspaceIdOf (StackSet tag layout window screenID screenDimension
 type instance WorkspaceIdOf (XConfig l) = WorkspaceId
 type instance WorkspaceIdOf XConf = WorkspaceId
 type instance WorkspaceIdOf XState = WorkspaceId
+type instance WorkspaceIdOf (Maybe a) = WorkspaceIdOf a
 
 type family WindowOf a
 type instance WindowOf Window = Window
@@ -71,6 +75,8 @@ type instance WindowOf (StackSet tag layout window screenID screenDimensions)
 type instance WindowOf (XConfig l) = Window
 type instance WindowOf XConf = Window
 type instance WindowOf XState = Window
+type instance WindowOf (Maybe a) = WindowOf a
+type instance WindowOf [a] = WindowOf a
 
 type family ScreenIdOf a
 type instance ScreenIdOf ScreenId = ScreenId
@@ -81,6 +87,8 @@ type instance ScreenIdOf (StackSet tag layout window screenID screenDimensions)
 type instance ScreenIdOf (XConfig l) = ScreenId
 type instance ScreenIdOf XConf = ScreenId
 type instance ScreenIdOf XState = ScreenId
+type instance ScreenIdOf (Maybe a) = ScreenIdOf a
+type instance ScreenIdOf [a] = ScreenIdOf a
 
 type family ScreenDetailOf a
 type instance ScreenDetailOf ScreenDetail = ScreenDetail
@@ -89,3 +97,5 @@ type instance ScreenDetailOf (Screen tag layout window screenID screenDimensions
 type instance ScreenDetailOf (StackSet tag layout window screenID screenDimensions)
     = screenDimensions
 type instance ScreenDetailOf XState = ScreenDetail
+type instance ScreenDetailOf (Maybe a) = ScreenDetailOf a
+type instance ScreenDetailOf [a] = ScreenDetailOf a

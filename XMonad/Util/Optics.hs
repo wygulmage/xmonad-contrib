@@ -12,6 +12,30 @@
 -- It is designed to be used with an optics library like lens or microlens, but the lenses are useful on their own as traversals.
 -----------------------------------------------------------------------------
 
+{----------------------------------------------------------------------------
+
+Examples with functions from lens or microlens
+----------------------------------------------
+
+Map a function `f` over the current stack if it isn't empty (equivalent to `modify'`):
+`_index %~ f`
+
+Map a function `f` over the `Workspace`s in a `StackSet` (equivalent to `mapWorkspace`):
+`_workspaces %~ f`
+
+Get a list of all `Workspace`s in a `StackSet` (equivalent to `workspaces`):
+`toListOf _workspaces`
+
+Map a function `f` over the layouts in a `StackSet` (equivalent to `mapLayout`):
+`_workspaces . _layout %~ f`
+
+Equivalent to StackSet.with z f:
+`views (_current . _workspace . _stack) (maybe z f)` (also equivalent to `ask (with z f)`)
+or `maybe z f . view (current . _workspace . _stack)`
+Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffices.
+
+----------------------------------------------------------------------------}
+
 {-# LANGUAGE
     FlexibleContexts
   , FlexibleInstances
@@ -54,6 +78,7 @@ module XMonad.Util.Optics
     , _visible
     , _hidden
     , _workspaces
+    , _index
     -- Screen
     , _screenId
     , _screenDetail
@@ -256,6 +281,12 @@ _layouts :: Traversal
     layout
     layout'
 _layouts = _workspaces . _layout
+
+_index :: Simple Traversal
+    (StackSet tag layout window screenID screenDimesnions)
+    window
+-- a la `index :: StackSet tag layout window screenID screenDimensions -> [window]`
+_index = _current . _workspace . _stack . traverse . traverseStack
 
 --- Screen Lenses:
 

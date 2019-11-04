@@ -14,6 +14,27 @@
 -- 1. Classy optics can be 'lifted' like MTL methods.
 -- 2. Classy optics provide fine-grained constraints on a function's capabilities.
 -----------------------------------------------------------------------------
+{----------------------------------------------------------------------------
+
+Examples
+--------
+
+Most existing operations in Stackset have simpler implementations in terms of the optics:
+------------
+`StackSet.integrate` and `StackSet.index`: toListOf _windows
+`StackSet.with z f`: `views (_current . _stack) (maybe z f)`
+`StackSet.modify z f`: `_current . _stack %~ (maybe z f)`
+`StackSet.modify' f`: `_current . _stack . traverse %~ f`
+`StackSet.peek`: `views (_current . _stack) (views _focus)`
+`StackSet.screens`: `toListOf _screens`
+`StackSet.workspaces`: `toListOf _workspaces`
+`StackSet.mapWorkspace f`: `_workspaces %~ f`
+`StackSet.allWindows`: `L.nub . toListOf _windows`
+`StackSet.mapLayout f`: `_layouts %~ f`
+`StackSet.currentTag`: `view (_current . _tag)`
+`StackSet.renameTag t'`: `_tags %~ (\ t -> if t' == t then t' else t)`
+
+----------------------------------------------------------------------------}
 
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FlexibleContexts       #-}
@@ -210,6 +231,31 @@ class HasZipper ta where
     _focus :: Simple Lens ta (ZipperItem ta)
     _up, _down :: Simple Lens ta [ZipperItem ta]
 
+class HasWorkspaceNames ta where
+  -- `_workspaceNames` is used so that `_workspaces` can be the Traversal of Workspaces.
+  _workspaceNames :: Simple Lens ta [WorkspaceId]
+
+class
+    (a ~ ScreenOf ta, b ~ ScreenOf tb) =>
+    HasVisible ta tb a b
+    | ta -> a, tb -> b, ta b -> tb, tb a -> ta
+  where
+    _current :: (ta ~ tb, a ~ b) => Lens ta tb a b
+    -- ^ active visible item
+    _visible :: (ta ~ tb, a ~ b) => Lens ta tb [a] [b]
+    -- ^ all inactive visible items
+    _screens :: Lens ta tb (NonEmpty a) (NonEmpty b)
+    -- ^ A Lens to a non-empty list of Screens, starting with the focused screen
+    -- to traverse the Screens, use `_screens . traverse`.
+    -- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
+
+
+class HasFloating ta where
+    _floating :: Simple Lens ta (Map (WindowOf ta) RationalRect)
+
+class HasHidden ta where
+    _hidden :: Simple Lens ta [WorkspaceOf ta]
+
 
 ----- Traversal Classes
 
@@ -239,31 +285,6 @@ class
     _windows :: Traversal ta tb a b
     -- should be `Simple Traversal ta Window`
 
-class HasWorkspaceNames ta where
-  -- `_workspaceNames` is used so that `_workspaces` can be the Traversal of Workspaces.
-  _workspaceNames :: Simple Lens ta [WorkspaceId]
-
-class
-    (a ~ ScreenOf ta, b ~ ScreenOf tb) =>
-    HasVisible ta tb a b
-    | ta -> a, tb -> b, ta b -> tb, tb a -> ta
-  where
-    _current :: (ta ~ tb, a ~ b) => Lens ta tb a b
-    -- ^ active visible item
-    _visible :: (ta ~ tb, a ~ b) => Lens ta tb [a] [b]
-    -- ^ all inactive visible items
-    _screens :: Lens ta tb (NonEmpty a) (NonEmpty b)
-    -- ^ A Lens to a non-empty list of Screens, starting with the focused screen
-    -- to traverse the Screens, use `_screens . traverse`.
-    -- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
-
-
-class HasFloating ta where
-    _floating :: Simple Lens ta (Map (WindowOf ta) RationalRect)
-
-class HasHidden ta where
-    _hidden :: Simple Lens ta [WorkspaceOf ta]
-
 class
     (a ~ WorkspaceOf ta, b ~ WorkspaceOf tb) =>
     HasWorkspaces ta tb a b
@@ -271,6 +292,8 @@ class
   where
     _workspaces :: Traversal ta tb a b
 
+-- instance HasLayouts ta tb a b => HasLayouts (Maybe ta) (Maybe tb) a b where
+    -- _layouts = traverse . _layouts
 
 ----- XMonad.Core -----
 
