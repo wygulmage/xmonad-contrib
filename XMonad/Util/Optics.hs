@@ -36,13 +36,11 @@ Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffi
 
 ----------------------------------------------------------------------------}
 
-{-# LANGUAGE
-    FlexibleContexts
-  , FlexibleInstances
-  , LiberalTypeSynonyms
-  , RankNTypes
-  , ScopedTypeVariables
-  #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE LiberalTypeSynonyms #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module XMonad.Util.Optics
     -- XConf Lenses:
@@ -56,12 +54,21 @@ module XMonad.Util.Optics
     , _mousePosition
     , _theRoot
     -- XConfig Lenses:
+    , _borderWidth
+    , _clickJustFocuses
+    , _clientMask
     , _focusedBorderColor, _normalBorderColor
+    , _focusFollowsMouse
     , _handleEventHook
+    , _handleExtraArgs
     , _keys
     , _layoutHook
+    , _logHook
     , _manageHook
     , _modMask
+    , _mouseBindings
+    , _rootMask
+    , _startupHook
     , _terminal
     , _workspaceNames
     -- XState
@@ -94,20 +101,47 @@ module XMonad.Util.Optics
     , traverseStack
     ) where
 
-import Control.Applicative ((<**>))
+import Control.Applicative ( (<**>) )
 
-import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Map (Map)
-import Data.Semigroup (All)
-import Data.Set (Set)
+import Data.List.NonEmpty ( NonEmpty ((:|)) )
+import Data.Map ( Map )
+import Data.Semigroup ( All )
+import Data.Set ( Set )
 
 import Graphics.X11.Xlib
-    (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
-import Graphics.X11.Xlib.Extras (Event)
+    ( Button
+    , ButtonMask
+    , Dimension
+    , Display
+    , EventMask
+    , KeyMask
+    , KeySym
+    , Pixel
+    , Position
+    , Window
+    )
+import Graphics.X11.Xlib.Extras ( Event )
 
 import XMonad.Core
-    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WorkspaceId, X, XConf (..), XConfig (..), XState (..))
-import XMonad.StackSet (RationalRect (..), Screen (..), Stack (..), StackSet (..), Workspace (..))
+    ( Layout
+    , ManageHook
+    , ScreenDetail
+    , ScreenId
+    , StateExtension
+    , WindowSet
+    , WorkspaceId
+    , X
+    , XConf (..)
+    , XConfig (..)
+    , XState (..)
+    )
+import XMonad.StackSet
+    ( RationalRect (..)
+    , Screen (..)
+    , Stack (..)
+    , StackSet (..)
+    , Workspace (..)
+    )
 
 ----- Optics for XMonad.Core -----
 
@@ -144,15 +178,35 @@ _theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
 
 --- XConfig Optics:
 
+_borderWidth :: Simple Lens (XConfig layout) Dimension
+_borderWidth f s = (\ x -> s{ borderWidth = x }) <$> f (borderWidth s)
+
+_clickJustFocuses :: Simple Lens (XConfig layout) Bool
+_clickJustFocuses f s =
+    (\ x -> s{ clickJustFocuses = x }) <$> f (clickJustFocuses s)
+
+_clientMask :: Simple Lens (XConfig layout) EventMask
+_clientMask f s = (\ x -> s{ clientMask = x }) <$> f (clientMask s)
+
 _focusedBorderColor, _normalBorderColor :: Simple Lens (XConfig layout) String
 _focusedBorderColor f s =
     (\ x -> s{ focusedBorderColor = x }) <$> f (focusedBorderColor s)
 _normalBorderColor f s =
     (\ x -> s{ normalBorderColor = x }) <$> f (normalBorderColor s)
 
+_focusFollowsMouse :: Simple Lens (XConfig layout) Bool
+_focusFollowsMouse f s =
+    (\ x -> s{ focusFollowsMouse = x }) <$> f (focusFollowsMouse s)
+
 _handleEventHook :: Simple Lens (XConfig layout) (Event -> X All)
 _handleEventHook f s =
     (\ x -> s{ handleEventHook = x }) <$> f (handleEventHook s)
+
+_handleExtraArgs :: Simple Lens
+    (XConfig layout)
+    ([String] -> XConfig Layout -> IO (XConfig Layout))
+_handleExtraArgs f s =
+    (\ x -> s{ handleExtraArgs = x }) <$> f (handleExtraArgs s)
 
 _keys :: Simple Lens (XConfig layout) (XConfig Layout -> Map (ButtonMask, KeySym) (X ()))
 _keys f s = (\ x -> s{ keys = x }) <$> f (keys s)
@@ -161,11 +215,25 @@ _layoutHook ::
     Lens (XConfig layout) (XConfig layout') (layout Window) (layout' Window)
 _layoutHook f s = (\ x -> s{ layoutHook = x }) <$> f (layoutHook s)
 
+_logHook :: Simple Lens (XConfig layout) (X ())
+_logHook f s = (\ x -> s{ logHook = x }) <$> f (logHook s)
+
 _manageHook :: Simple Lens (XConfig layout) ManageHook
 _manageHook f s = (\ x -> s{ manageHook = x }) <$> f (manageHook s)
 
 _modMask :: Simple Lens (XConfig layout) KeyMask
 _modMask f s = (\ x -> s{ modMask = x }) <$> f (modMask s)
+
+_mouseBindings :: Simple Lens
+    (XConfig layout)
+    (XConfig Layout -> Map (ButtonMask, Button) (Window -> X ()))
+_mouseBindings f s = (\ x -> s{ mouseBindings = x }) <$> f (mouseBindings s)
+
+_rootMask :: Simple Lens (XConfig layout) EventMask
+_rootMask f s = (\ x -> s{ rootMask = x }) <$> f (rootMask s)
+
+_startupHook :: Simple Lens (XConfig layout) (X ())
+_startupHook f s = (\ x -> s{ startupHook = x }) <$> f (startupHook s)
 
 _terminal :: Simple Lens (XConfig layout) String
 _terminal f s = (\ x -> s{ terminal = x }) <$> f (terminal s)
@@ -216,7 +284,7 @@ traverseStack f s =
         <*> traverse f (down s)
         where
           backwardsF (x : xs) = (:) <$> f x >*< backwardsF xs
-          backwardsF _ = pure []
+          backwardsF _        = pure []
           (>*<) = flip (<**>)
           infixl 4 >*<
 
@@ -283,7 +351,7 @@ _layouts :: Traversal
 _layouts = _workspaces . _layout
 
 _index :: Simple Traversal
-    (StackSet tag layout window screenID screenDimesnions)
+    (StackSet tag layout window screenID screenDimensions)
     window
 -- a la `index :: StackSet tag layout window screenID screenDimensions -> [window]`
 _index = _current . _workspace . _stack . traverse . traverseStack
