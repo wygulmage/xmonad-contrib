@@ -1,4 +1,8 @@
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module XMonad.Util.Optics.HasXConfig where
 
@@ -126,6 +130,7 @@ class HasKeys ta where
     default _keys ::
         HasXConfig ta ta l l =>
         Simple Lens ta (XConfig Layout -> Map (ButtonMask, KeySym) (X ()))
+    _keys = _xConfig . O._keys
 
 class HasLogHook a where
     _logHook :: Simple Lens a (X ())
@@ -172,3 +177,48 @@ class HasWorkspaceNames ta where
   default _workspaceNames ::
       HasXConfig ta ta l l => Simple Lens ta [WorkspaceId]
   _workspaceNames = _xConfig . O._workspaceNames
+
+------------------------------------------------------------------------------
+--- Instances
+
+instance HasXConfig (XConfig layout) (XConfig layout') layout layout' where
+    _xConfig = id
+
+instance HasLayoutHook (XConfig layout) (XConfig layout') layout layout'
+instance HasBorderColor (XConfig layout)
+instance HasBorderWidth (XConfig layout)
+instance HasClickJustFocuses (XConfig layout)
+instance HasClientMask (XConfig layout)
+instance HasFocusFollowsMouse (XConfig layout)
+instance HasHandleEventHook (XConfig layout)
+instance HasHandleExtraArgs (XConfig layout)
+instance HasKeys (XConfig layout)
+instance HasLogHook (XConfig layout)
+instance HasManageHook (XConfig layout)
+instance HasModMask (XConfig layout)
+instance HasMouseBindings (XConfig layout)
+instance HasRootMask (XConfig layout)
+instance HasStartupHook (XConfig layout)
+instance HasTerminal (XConfig layout)
+instance HasWorkspaceNames (XConfig layout)
+
+instance HasXConfig XConf XConf Layout Layout where
+    _xConfig = O._xConfig
+
+instance HasLayoutHook XConf XConf Layout Layout
+instance HasBorderColor XConf
+instance HasBorderWidth XConf
+instance HasClickJustFocuses XConf
+instance HasClientMask XConf
+instance HasFocusFollowsMouse XConf
+instance HasHandleEventHook XConf
+instance HasHandleExtraArgs XConf
+instance HasKeys XConf
+instance HasLogHook XConf
+instance HasManageHook XConf
+instance HasModMask XConf
+instance HasMouseBindings XConf
+instance HasRootMask XConf
+instance HasStartupHook XConf
+instance HasTerminal XConf
+instance HasWorkspaceNames XConf
