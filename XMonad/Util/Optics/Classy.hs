@@ -167,12 +167,6 @@ class
 
 ----- XMonad.Core -----
 
-
-
---- XConfig instances:
--- XConfig is parameterized by layout.
-
-
 --- XState instances:
 -- XState is not parameterized, and instantiates layout as Layout (in WindowSet).
 
