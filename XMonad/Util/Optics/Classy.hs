@@ -82,9 +82,10 @@ import Data.Functor ((<$>))
 import Data.Traversable (traverse)
 import XMonad.Util.Optics.Classy.Stack (HasFocus (..), HasZipper (..), HasWindows (..))
 -- import XMonad.Util.Optics.Classy.Workspace
-import XMonad.Util.Optics.Classy.XConfig
-import XMonad.Util.Optics.Classy.XConf
-import XMonad.Util.Optics.Class.XState
+import XMonad.Util.Optics.HasXConfig
+import XMonad.Util.Optics.HasXConf
+import XMonad.Util.Optics.HasXState
+import XMonad.Util.Optics.HasWindowSet
 
 --- Types:
 import Data.Map (Map)

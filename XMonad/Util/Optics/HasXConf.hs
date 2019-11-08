@@ -7,6 +7,7 @@ import Data.Set (Set)
 
 import Graphics.X11.Xlib
     (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
+import Graphics.X11.Xlib.Extras (Event)
 
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types

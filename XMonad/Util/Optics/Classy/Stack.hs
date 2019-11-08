@@ -12,7 +12,7 @@
 
 module XMonad.Util.Optics.Classy.Stack
     ( HasWindows, _windows
-    , HasZipper, _focus, _up, _down
+    , HasZipper, _up, _down
     , HasFocus (..)
     )
   where
@@ -57,6 +57,7 @@ class
   where
     _windows :: Traversal ta tb a b
     -- should be `Simple Traversal ta Window`
+
 --- 'Stack' (list zipper) instances:
 
 instance HasFocus (Stack a) where
@@ -76,8 +77,8 @@ instance HasFocus (NonEmpty a) where
     type FocusOf (NonEmpty a) = a
     _focus f ~(x :| xs) = (:| xs) <$> f x
 
-instance HasWindows
-    (Workspace tag layout window) (Workspace tag layout window)
-    window window
-  where
-    _windows = _stack . traverse . _windows
+-- instance HasWindows
+    -- (Workspace tag layout window) (Workspace tag layout window)
+    -- window window
+  -- where
+    -- _windows = _stack . traverse . _windows
