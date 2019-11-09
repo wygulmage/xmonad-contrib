@@ -1,8 +1,6 @@
-{-# LANGUAGE
-    NoImplicitPrelude
-  , RankNTypes
-  , TypeFamilies
-  #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module XMonad.Util.Optics.Types where
 
@@ -11,15 +9,24 @@ import Data.Functor (Functor)
 import Prelude (Maybe)
 
 import Graphics.X11.Xlib (Window)
-import XMonad.Core (Layout, ScreenDetail, ScreenId, WindowSet, WorkspaceId, XConf, XConfig, XState)
+import XMonad.Core
+    ( Layout
+    , ScreenDetail
+    , ScreenId
+    , WindowSet
+    , WorkspaceId
+    , XConf
+    , XConfig
+    , XState
+    )
 import XMonad.StackSet (Screen, Stack, StackSet, Workspace)
 
 
 ------- Optical Types -------
 type LensLike m ta tb a b = (a -> m b) -> ta -> m tb
-type Lens ta tb a b = forall m. Functor m => LensLike m ta tb a b
-type Traversal ta tb a b = forall m. Applicative m => LensLike m ta tb a b
-type Simple o ta a = o ta ta a a
+type Lens       ta tb a b = forall m. Functor m => LensLike m ta tb a b
+type Traversal  ta tb a b = forall m. Applicative m => LensLike m ta tb a b
+type Simple   o ta    a   = o ta ta a a
 
 
 ------- Type Families for XMonad.StackSet -------

@@ -7,10 +7,10 @@
 
 module XMonad.Util.Optics.HasWorkspace where
 
-import Data.List.NonEmpty ( NonEmpty ((:|)) )
-import Data.Map ( Map )
-import Data.Semigroup ( All )
-import Data.Set ( Set )
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Map (Map)
+import Data.Semigroup (All)
+import Data.Set (Set)
 
 import Graphics.X11.Xlib
     ( Button
@@ -24,7 +24,7 @@ import Graphics.X11.Xlib
     , Position
     , Window
     )
-import Graphics.X11.Xlib.Extras ( Event )
+import Graphics.X11.Xlib.Extras (Event)
 
 import XMonad.Core
     ( Layout
@@ -40,7 +40,7 @@ import XMonad.Core
     , XConfig
     , XState
     )
-import XMonad.StackSet (Screen, StackSet, Workspace, RationalRect)
+import XMonad.StackSet (RationalRect, Screen, StackSet, Workspace)
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types
 
@@ -48,6 +48,8 @@ import XMonad.Util.Optics.Types
 class
     ( HasLayouts tw tw (ALayoutOf w) (ALayoutOf w)
     , HasLayouts tw' tw' (ALayoutOf w') (ALayoutOf w')
+    , HasTags tw tw (WorkspaceIdOf w) (WorkspaceIdOf w)
+    , HasTags tw' tw' (WorkspaceIdOf w') (WorkspaceIdOf w')
     ) =>
     HasWorkspaces tw tw' w w'
     | tw -> w, tw' -> w', tw w' -> tw', tw' w -> tw
@@ -68,7 +70,18 @@ class
   where
     _workspace :: Lens tw tw' w w'
 
-class HasTag ti ti' i i'
+class HasTags ti ti' i i'
+    | ti -> i, ti' -> i', ti i' -> ti', ti' i -> ti
+  where
+    _tags :: Traversal ti ti' i i'
+    default _tags ::
+        HasWorkspaces
+            ti ti'
+            (Workspace i layout window) (Workspace i' layout window) =>
+        Traversal ti ti' i i'
+    _tags = _workspaces . O._tag
+
+class HasTags ti ti' i i' => HasTag ti ti' i i'
     | ti -> i, ti' -> i', ti i' -> ti', ti' i -> ti
   where
     _tag :: Lens ti ti' i i'
@@ -117,6 +130,10 @@ instance HasWorkspaces
     (Workspace workspaceID layout window) (Workspace workspaceID' layout' window')
     (Workspace workspaceID layout window) (Workspace workspaceID' layout' window')
 
+instance HasTags
+    (Workspace workspaceID layout window) (Workspace workspaceID' layout window)
+    workspaceID workspaceID'
+
 instance HasTag
     (Workspace workspaceID layout window) (Workspace workspaceID' layout window)
     workspaceID workspaceID'
@@ -146,6 +163,12 @@ instance HasWorkspaces
     (Workspace workspaceID layout window)
     (Workspace workspaceID' layout' window')
 
+instance HasTags
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID' layout window screenID screenDimensions)
+    workspaceID
+    workspaceID'
+
 instance HasTag
     (Screen workspaceID layout window screenID screenDimensions)
     (Screen workspaceID' layout window screenID screenDimensions)
@@ -174,8 +197,22 @@ instance HasWorkspaces
   where
     _workspaces = O._workspaces
 
+instance HasTags
+    (StackSet workspaceID layout window screenID screenDimensions)
+    (StackSet workspaceID' layout window screenID screenDimensions)
+    workspaceID
+    workspaceID'
+
 instance HasLayouts
     (StackSet workspaceID layout window screenID screenDimensions)
     (StackSet workspaceID layout' window screenID screenDimensions)
     layout
     layout'
+
+
+--- WorkspaceId
+instance HasTags WorkspaceId WorkspaceId WorkspaceId WorkspaceId where
+    _tags = id
+
+instance HasTag WorkspaceId WorkspaceId WorkspaceId WorkspaceId where
+    _tag = id

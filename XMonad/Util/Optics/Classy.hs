@@ -70,7 +70,7 @@ module XMonad.Util.Optics.Classy
     , HasWorkspaces, _workspaces
     , HasScreenId, _screenId
     , HasScreenDetail, _screenDetail
-    , HasStack, _stack
+    -- , HasStack, _stack
     , HasTag, _tag
     , HasZipper, _focus, _up, _down
     )
@@ -82,9 +82,11 @@ import Data.Functor ((<$>))
 import Data.Traversable (traverse)
 import XMonad.Util.Optics.Classy.Stack (HasFocus (..), HasZipper (..), HasWindows (..))
 -- import XMonad.Util.Optics.Classy.Workspace
+--- Core optics:
 import XMonad.Util.Optics.HasXConfig
 import XMonad.Util.Optics.HasXConf
 import XMonad.Util.Optics.HasXState
+--- StackSet optics:
 import XMonad.Util.Optics.HasWindowSet
 import XMonad.Util.Optics.HasScreen
 import XMonad.Util.Optics.HasWorkspace
@@ -120,96 +122,15 @@ A few classes comprise multiple optics: `HasBorder` has `_focusedBorder` and `_n
 
 ------- Optic Classes -------
 
--- Many of these are too polymorphic, because the types they represent in XMonad are too polymorphic. Please respect the types they /should/ have.
-
---- StackSet Traversals:
-
-instance HasWorkspaces
-    (StackSet tag layout window screenID screenDimensions)
-    (StackSet tag' layout' window screenID screenDimensions)
-    (Workspace tag layout window)
-    (Workspace tag' layout' window)
-  where
-    _workspaces = O._workspaces
-
-instance HasLayouts
-    (StackSet tag layout window screenID screenDimensions)
-    (StackSet tag layout' window screenID screenDimensions)
-    layout
-    layout'
-  where
-    _layouts = _workspaces . _layouts
-
-
 --- Screen Lenses:
 
-instance HasScreenId
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout window screenID' screenDimensions)
-    screenID
-    screenID'
-  where
-    _screenId = O._screenId
-
-instance HasScreenDetail
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout window screenID screenDimensions')
-    screenDimensions
-    screenDimensions'
-  where
-    _screenDetail = O._screenDetail
-
-instance HasWorkspaces
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout' window screenID screenDimensions)
-    (Workspace tag layout window)
-    (Workspace tag' layout' window)
-instance HasWorkspace
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout' window screenID screenDimensions)
-    (Workspace tag layout window)
-    (Workspace tag' layout' window)
-  where
-    _workspace = O._workspace
-
-instance HasLayout
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout' window screenID screenDimensions)
-    layout
-    layout'
-  where
-    _layout = _workspace . _layout
-
-instance HasLayouts
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout' window screenID screenDimensions)
-    layout
-    layout'
-  where
-    _layouts = _workspace . _layouts
-
-instance HasWindows
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout window screenID screenDimensions)
-    window
-    window
-  where
-    _windows = _workspace . _windows
-
-instance HasTags
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout window screenID screenDimensions)
-    tag
-    tag'
-
-instance HasTag
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag' layout window screenID screenDimensions)
-    tag
-    tag'
-  where
-    _tag = _workspace . _tag
-
+-- instance HasWindows
+    -- (Screen tag layout window screenID screenDimensions)
+    -- (Screen tag layout window screenID screenDimensions)
+    -- window
+    -- window
+  -- where
+    -- _windows = _workspace . _windows
 
 
 ----- Other Trivial Instances -----
@@ -219,7 +140,3 @@ instance HasScreenDetail ScreenDetail ScreenDetail ScreenDetail ScreenDetail whe
 
 instance HasScreenId ScreenId ScreenId ScreenId ScreenId where
     _screenId = id
-
-instance HasTags WorkspaceId WorkspaceId WorkspaceId WorkspaceId
-instance HasTag WorkspaceId WorkspaceId WorkspaceId WorkspaceId where
-    _tag = id

@@ -335,6 +335,12 @@ library
                         XMonad.Util.NoTaskbar
                         XMonad.Util.Optics
                         XMonad.Util.Optics.Classy
+                        XMonad.Util.Optics.HasScreen
+                        XMonad.Util.Optics.HasWindowSet
+                        XMonad.Util.Optics.HasWorkspace
+                        XMonad.Util.Optics.HasXConf
+                        XMonad.Util.Optics.HasXConfig
+                        XMonad.Util.Optics.HasXState
                         XMonad.Util.Optics.Types
                         XMonad.Util.Paste
                         XMonad.Util.PositionStore

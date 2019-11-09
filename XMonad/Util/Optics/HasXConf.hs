@@ -3,16 +3,14 @@
 module XMonad.Util.Optics.HasXConf where
 
 import Data.Map (Map)
-import Data.Set (Set)
 
 import Graphics.X11.Xlib
-    (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
+    (Button, Display, KeyMask, KeySym, Pixel, Position, Window)
 import Graphics.X11.Xlib.Extras (Event)
 
+import XMonad.Core (X, XConf)
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types
-import XMonad.Core
-    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WindowSpace, WorkspaceId, X, XConf, XConfig, XState)
 
 ------------------------------------------------------------------------------
 --- Classes

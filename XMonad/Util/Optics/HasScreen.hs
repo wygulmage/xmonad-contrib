@@ -7,10 +7,10 @@
 
 module XMonad.Util.Optics.HasScreen where
 
-import Data.List.NonEmpty ( NonEmpty ((:|)) )
-import Data.Map ( Map )
-import Data.Semigroup ( All )
-import Data.Set ( Set )
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Map (Map)
+import Data.Semigroup (All)
+import Data.Set (Set)
 
 import Graphics.X11.Xlib
     ( Button
@@ -24,7 +24,7 @@ import Graphics.X11.Xlib
     , Position
     , Window
     )
-import Graphics.X11.Xlib.Extras ( Event )
+import Graphics.X11.Xlib.Extras (Event)
 
 import XMonad.Core
     ( Layout
@@ -40,7 +40,7 @@ import XMonad.Core
     , XConfig
     , XState
     )
-import XMonad.StackSet (Screen, StackSet, RationalRect)
+import XMonad.StackSet (RationalRect, Screen, StackSet)
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types
 
@@ -98,12 +98,6 @@ instance HasScreen
     (Screen workspaceID' layout' window' screenID' screenDimensions')
   where
     _screen = id
-
-instance HasScreens
-    (Screen workspaceID layout window screenID screenDimensions)
-    (Screen workspaceID' layout' window' screenID' screenDimensions')
-    (Screen workspaceID layout window screenID screenDimensions)
-    (Screen workspaceID' layout' window' screenID' screenDimensions')
 
 instance HasScreenId
     (Screen workspaceID layout window screenID screenDimensions)
