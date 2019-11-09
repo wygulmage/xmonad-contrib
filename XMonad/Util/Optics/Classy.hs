@@ -86,6 +86,8 @@ import XMonad.Util.Optics.HasXConfig
 import XMonad.Util.Optics.HasXConf
 import XMonad.Util.Optics.HasXState
 import XMonad.Util.Optics.HasWindowSet
+import XMonad.Util.Optics.HasScreen
+import XMonad.Util.Optics.HasWorkspace
 
 --- Types:
 import Data.Map (Map)
@@ -119,97 +121,6 @@ A few classes comprise multiple optics: `HasBorder` has `_focusedBorder` and `_n
 ------- Optic Classes -------
 
 -- Many of these are too polymorphic, because the types they represent in XMonad are too polymorphic. Please respect the types they /should/ have.
-
-class
-    (a ~ ScreenIdOf ta , b ~ ScreenIdOf tb) =>
-    HasScreenId ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _screenId :: Lens ta tb a b
-    -- Should be `Simple Lens ta ScreenId`
-
-class
-    (a ~ ScreenDetailOf ta , b ~ ScreenDetailOf tb) =>
-    HasScreenDetail ta tb a b
-    | ta -> a, tb -> b
-    , ta b -> tb, tb a -> ta
-  where
-    _screenDetail :: Lens ta tb a b
-    -- Should be `Simple Lens ta ScreenDetail`
-
-class HasWindowSet ta where
-    _windowset :: Simple Lens ta WindowSet
-
-class
-    (a ~ ScreenOf ta, b ~ ScreenOf tb) =>
-    HasVisible ta tb a b
-    | ta -> a, tb -> b, ta b -> tb, tb a -> ta
-  where
-    _current :: (ta ~ tb, a ~ b) => Lens ta tb a b
-    -- ^ active visible item
-    _visible :: (ta ~ tb, a ~ b) => Lens ta tb [a] [b]
-    -- ^ all inactive visible items
-    _screens :: Lens ta tb (NonEmpty a) (NonEmpty b)
-    -- ^ A Lens to a non-empty list of Screens, starting with the focused screen
-    -- to traverse the Screens, use `_screens . traverse`.
-    -- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
-
-
-class HasFloating ta where
-    _floating :: Simple Lens ta (Map (WindowOf ta) RationalRect)
-
-class
-    (HasWorkspaces ta ta (WorkspaceOf ta) (WorkspaceOf ta)) =>
-    HasHidden ta
-  where
-    _hidden :: Simple Lens ta [WorkspaceOf ta]
-
-
------ XMonad.Core -----
-
---- XState instances:
--- XState is not parameterized, and instantiates layout as Layout (in WindowSet).
-
-instance HasWindowSet XState where
-    _windowset = O._windowset
-
-instance HasVisible
-    XState
-    XState
-    (Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail)
-    (Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail)
-  where
-    _screens = _windowset . _screens
-    _current = _windowset . _current
-    _visible = _windowset . _visible
-
-instance HasWorkspaces XState XState WindowSpace WindowSpace where
-    _workspaces = _windowset . _workspaces
-
------ Optics for XMonad.StackSet -----
-
---- StackSet Lenses:
-
-instance HasWindowSet WindowSet
-  where
-    _windowset = id
-
-instance HasFloating (StackSet tag layout window screenID screenDimensions) where
-    _floating = O._floating
-
-instance HasHidden (StackSet tag layout window screenID screenDimensions) where
-    _hidden = O._hidden
-
-instance HasVisible
-    (StackSet tag layout window screenID screenDimensions)
-    (StackSet tag layout window screenID' screenDimensions')
-    (Screen tag layout window screenID screenDimensions)
-    (Screen tag layout window screenID' screenDimensions')
-  where
-    _current = O._current
-    _visible = O._visible
-    _screens = O._screens
 
 --- StackSet Traversals:
 

@@ -43,6 +43,7 @@ import XMonad.Core
 import XMonad.StackSet (RationalRect)
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types
+import XMonad.Util.Optics.HasScreen
 
 
 class

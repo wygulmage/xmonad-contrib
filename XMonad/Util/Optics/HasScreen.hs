@@ -40,15 +40,16 @@ import XMonad.Core
     , XConfig
     , XState
     )
-import XMonad.StackSet (Screen, RationalRect)
+import XMonad.StackSet (Screen, StackSet, RationalRect)
 import qualified XMonad.Util.Optics as O
 import XMonad.Util.Optics.Types
 
 
-
 class
-    ( HasScreenId ts ts' (ScreenIdOf s) (ScreenIdOf s')
-    , HasScreenDetail ts ts' (ScreenDetailOf s) (ScreenDetailOf s')
+    ( HasScreenId ts ts (ScreenIdOf s) (ScreenIdOf s)
+    , HasScreenId ts' ts' (ScreenIdOf s') (ScreenIdOf s')
+    , HasScreenDetail ts ts (ScreenDetailOf s) (ScreenDetailOf s)
+    , HasScreenDetail ts' ts' (ScreenDetailOf s') (ScreenDetailOf s')
     ) =>
     HasScreen ts ts' s s'
     | ts -> s, ts' -> s', ts s' -> ts', ts' s -> ts
@@ -62,7 +63,11 @@ class
   where
     _screenId :: Lens ti ti' i i'
     default _screenId ::
-        HasScreen ti ti' (Screen workspaceID layout window i screenDimensions) (Screen workspaceID layout window i' screenDimensions) =>
+        HasScreen
+            ti
+            ti'
+            (Screen workspaceID layout window i screenDimensions)
+            (Screen workspaceID layout window i' screenDimensions) =>
         Lens ti ti' i i'
     _screenId = _screen . O._screenId
 
@@ -73,9 +78,41 @@ class
   where
     _screenDetail :: Lens td td' d d'
     default _screenDetail ::
-        HasScreen td td' (Screen workspaceID layout window screenID d) (Screen workspaceID layout window screenID d')=>
+        HasScreen
+            td
+            td'
+            (Screen workspaceID layout window screenID d)
+            (Screen workspaceID layout window screenID d') =>
         Lens td td' d d'
     _screenDetail = _screen . O._screenDetail
 
                      ------------------------------------------------------------------------------
 --- Instances:
+
+--- Screen:
+
+instance HasScreen
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID' layout' window' screenID' screenDimensions')
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID' layout' window' screenID' screenDimensions')
+  where
+    _screen = id
+
+instance HasScreens
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID' layout' window' screenID' screenDimensions')
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID' layout' window' screenID' screenDimensions')
+
+instance HasScreenId
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID layout window screenID' screenDimensions)
+    screenID
+    screenID'
+
+instance HasScreenDetail
+    (Screen workspaceID layout window screenID screenDimensions)
+    (Screen workspaceID layout window screenID screenDimensions')
+    screenDimensions
+    screenDimensions'
