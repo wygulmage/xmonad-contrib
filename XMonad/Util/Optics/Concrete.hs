@@ -152,6 +152,10 @@ import XMonad.StackSet
     , Workspace (..)
     )
 
+import XMonad.Util.Optics.Types
+import XMonad.Util.Optics.Internal
+
+
 ----- Optics for XMonad.Core -----
 
 --- XConf Optics:
@@ -408,11 +412,3 @@ _tag :: Lens
     workspaceID
     workspaceID'
 _tag f s = (\ x -> s{ tag = x }) <$> f (tag s)
-
-
-------- Non-exported Types (for documentation) --------
-
-type LensLike m ta tb a b = (a -> m b) -> ta -> m tb
-type Lens ta tb a b = forall m. Functor m => LensLike m ta tb a b
-type Traversal ta tb a b = forall m. Applicative m => LensLike m ta tb a b
-type Simple o ta a = o ta ta a a

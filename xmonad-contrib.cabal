@@ -30,7 +30,6 @@ extra-source-files: README.md CHANGES.md scripts/generate-configs scripts/run-xm
                     tests/Selective.hs
                     tests/SwapWorkspaces.hs
                     tests/XPrompt.hs
-                    tests/XMonad/Util/Optics/Tests.hs
                     XMonad/Config/dmwit.xmobarrc
                     XMonad/Config/Example.hs
 cabal-version:      >= 1.6
@@ -334,13 +333,8 @@ library
                         XMonad.Util.NamedWindows
                         XMonad.Util.NoTaskbar
                         XMonad.Util.Optics
-                        XMonad.Util.Optics.Classy
-                        XMonad.Util.Optics.HasScreen
-                        XMonad.Util.Optics.HasWindowSet
-                        XMonad.Util.Optics.HasWorkspace
-                        XMonad.Util.Optics.HasXConf
-                        XMonad.Util.Optics.HasXConfig
-                        XMonad.Util.Optics.HasXState
+                        XMonad.Util.Optics.Concrete
+                        XMonad.Util.Optics.Internal
                         XMonad.Util.Optics.Types
                         XMonad.Util.Paste
                         XMonad.Util.PositionStore
