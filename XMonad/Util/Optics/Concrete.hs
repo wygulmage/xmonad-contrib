@@ -251,7 +251,7 @@ _workspaceNames :: Simple Lens (XConfig layout) [String]
 _workspaceNames f s = (\ x -> s{ workspaces = x }) <$> f (workspaces s)
 
 
---- XState Optics:
+--- XState Lenses:
 
 _dragging :: Simple Lens XState (Maybe (Position -> Position -> X (), X ()))
 _dragging f s = (\ x -> s{ dragging = x }) <$> f (dragging s)
@@ -292,6 +292,7 @@ traverseStack f s =
         <*> f (focus s)
         <*> traverse f (down s)
         where
+          -- XMonad does not expose its dependence on 'transformers'.
           backwardsF (x : xs) = (:) <$> f x >*< backwardsF xs
           backwardsF _        = pure []
           (>*<) = flip (<**>)
@@ -325,12 +326,11 @@ _screens :: Lens
     (StackSet tag layout window screenID' screenDimensions')
     (NonEmpty (Screen tag layout window screenID screenDimensions))
     (NonEmpty (Screen tag layout window screenID' screenDimensions'))
--- ^ A Lens to a non-empty list of Screens, starting with the focused screen
--- to traverse the Screens, use `_screens . traverse`.
--- It's redundant because you already have `_current` and `_visible`, so maybe it should be changed to a Traversal of the Screens. But for some purposes it may be more convenient to modify them together as a list. If not, I'll change it to a Traversal.
+-- This is perhaps what '_visible' /should/ be: A Lens to all visible screens, with the active one in a distinguished position.
 _screens f s =
-    (\ (x :| xs) -> s { current = x, visible = xs })
+    (\ (x :| xs) -> s{ current = x, visible = xs })
     <$> f (current s :| visible s)
+
 
 --- StackSet Traversals:
 
@@ -362,8 +362,9 @@ _layouts = _workspaces . _layout
 _index :: Simple Traversal
     (StackSet tag layout window screenID screenDimensions)
     window
--- a la `index :: StackSet tag layout window screenID screenDimensions -> [window]`
+-- per @index :: StackSet tag layout window screenID screenDimensions -> [window]@
 _index = _current . _workspace . _stack . traverse . traverseStack
+
 
 --- Screen Lenses:
 
