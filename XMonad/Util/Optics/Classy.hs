@@ -77,9 +77,6 @@ module XMonad.Util.Optics.Classy
   where
 
 --- Classes:
-import Control.Category (id, (.))
-import Data.Functor ((<$>))
-import Data.Traversable (traverse)
 import XMonad.Util.Optics.Classy.Stack (HasFocus (..), HasZipper (..), HasWindows (..))
 -- import XMonad.Util.Optics.Classy.Workspace
 --- Core optics:
@@ -91,52 +88,12 @@ import XMonad.Util.Optics.HasWindowSet
 import XMonad.Util.Optics.HasScreen
 import XMonad.Util.Optics.HasWorkspace
 
---- Types:
-import Data.Map (Map)
-import Data.Semigroup (All)
-import Data.Set (Set)
-import Data.List.NonEmpty (NonEmpty ((:|)))
-import Graphics.X11.Xlib
-    (Button, ButtonMask, Display, KeyMask, KeySym, Pixel, Position, Window)
-import Graphics.X11.Xlib.Extras (Event)
-import Prelude (Bool, Either, Int, Maybe, String)
-
-import XMonad.Core
-    (Layout, ManageHook, ScreenDetail, ScreenId, StateExtension, WindowSet, WindowSpace, WorkspaceId, X, XConf, XConfig, XState)
-import XMonad.StackSet (RationalRect, Screen, Stack, StackSet, Workspace)
-import XMonad.Util.Optics.Types
-    (ALayoutOf, Lens, ScreenDetailOf, ScreenIdOf, ScreenOf, Simple, Traversal, WindowOf, WorkspaceIdOf, WorkspaceOf)
-
---- Functions:
-import qualified XMonad.Util.Optics as O
-
 
 {-
 To distinguish them from the existing record names, all optics in this module start with '_'.
 
-What follows is a massive amount of boilerplate. I've indiscriminately made every record field into a class, regardless of how useful it seems. 'Cause I can't predict how it will be used.
+I've indiscriminately made each record field into a class, regardless of how useful it seems. I can't predict how it will be used.
 
-A few classes comprise multiple optics: `HasBorder` has `_focusedBorder` and `_normalBorder`; `HasBorderColor` has `_focusedBorderColor` and `normalBorderColor`; `HasMapped` has `_mapped` and `_waitingUnmap`.
+A few classes comprise multiple optics: 'HasBorder' has '_focusedBorder' and '_normalBorder'; 'HasBorderColor' has '_focusedBorderColor' and 'normalBorderColor'; 'HasMapped' has '_mapped' and '_waitingUnmap'.
 
 -}
-
-------- Optic Classes -------
-
---- Screen Lenses:
-
--- instance HasWindows
-    -- (Screen tag layout window screenID screenDimensions)
-    -- (Screen tag layout window screenID screenDimensions)
-    -- window
-    -- window
-  -- where
-    -- _windows = _workspace . _windows
-
-
------ Other Trivial Instances -----
-
-instance HasScreenDetail ScreenDetail ScreenDetail ScreenDetail ScreenDetail where
-    _screenDetail = id
-
-instance HasScreenId ScreenId ScreenId ScreenId ScreenId where
-    _screenId = id

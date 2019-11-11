@@ -110,3 +110,11 @@ instance HasScreenDetail
     (Screen workspaceID layout window screenID screenDimensions')
     screenDimensions
     screenDimensions'
+
+--- ScreenId:
+instance HasScreenId ScreenId ScreenId ScreenId ScreenId where
+    _screenId = id
+
+--- ScreenDetail:
+instance HasScreenDetail ScreenDetail ScreenDetail ScreenDetail ScreenDetail where
+    _screenDetail = id
