@@ -1,18 +1,20 @@
------------------------------------------------------------------------------
--- |
--- Module       : XMonad.Util.Optics
--- Copyright    : © 2019 Keith Wygant
--- License      : Public Domain
---
--- Maintainer   : Keith Wygant
--- Stability    : unstable
--- Portability  : unportable
---
--- Provides Lenses and Traversals for common XMonad types.
--- It is designed to be used with an optics library like lens or microlens, but the lenses are useful on their own as traversals.
------------------------------------------------------------------------------
+{- |
+Description: Lenses and Traversals for XMonad types
 
-{----------------------------------------------------------------------------
+Copyright: © 2019 Keith Wygant
+License:   Public Domain
+
+Maintainer:  Keith Wygant
+Stability:   unstable
+Portability: unportable
+
+
+Designed to be used with an optics library like lens or microlens (but the lenses are useful on their own as traversals)
+-}
+
+module XMonad.Util.Optics
+
+{-
 
 Examples with functions from lens or microlens
 ----------------------------------------------
@@ -34,16 +36,9 @@ Equivalent to StackSet.with z f:
 or `maybe z f . view (current . _workspace . _stack)`
 Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffices.
 
-----------------------------------------------------------------------------}
+-}
 
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE LiberalTypeSynonyms #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
-module XMonad.Util.Optics
-    -- XConf Lenses:
+-- * XConf Lenses
     ( _buttonActions
     , _xConfig
     , _currentEvent
@@ -53,7 +48,7 @@ module XMonad.Util.Optics
     , _mouseFocused
     , _mousePosition
     , _theRoot
-    -- XConfig Lenses:
+-- * XConfig Lenses
     , _borderWidth
     , _clickJustFocuses
     , _clientMask
@@ -71,14 +66,14 @@ module XMonad.Util.Optics
     , _startupHook
     , _terminal
     , _workspaceNames
-    -- XState
+-- * XState Lenses
     , _dragging
     , _extensibleState
     , _mapped
     , _waitingUnmap
     , _numberlockMask
     , _windowset
-    -- StackSet (WindowSet)
+-- * StackSet (WindowSet) Optics
     , _current
     , _floating
     , _screens
@@ -86,15 +81,15 @@ module XMonad.Util.Optics
     , _hidden
     , _workspaces
     , _index
-    -- Screen
+-- * Screen Lenses
     , _screenId
     , _screenDetail
     , _workspace
-    -- Workspace
+-- * Workspace Lenses
     , _layout
     , _stack
     , _tag
-    -- Stack (Zipper)
+-- * Stack (Zipper) Optics
     , _focus
     , _up
     , _down

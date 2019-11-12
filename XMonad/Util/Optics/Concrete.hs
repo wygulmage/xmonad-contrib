@@ -10,12 +10,6 @@ Provides Lenses and Traversals for common XMonad types. 'Concrete' as opposed to
 Designed to be used with an optics library like lens or microlens, but the lenses are useful on their own as traversals.
 -}
 
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE LiberalTypeSynonyms #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module XMonad.Util.Optics.Concrete
 
 {----------------------------------------------------------------------------
@@ -134,11 +128,8 @@ import Graphics.X11.Xlib.Extras ( Event )
 import XMonad.Core
     ( Layout
     , ManageHook
-    , ScreenDetail
-    , ScreenId
     , StateExtension
     , WindowSet
-    , WorkspaceId
     , X
     , XConf (..)
     , XConfig (..)
@@ -153,7 +144,6 @@ import XMonad.StackSet
     )
 
 import XMonad.Util.Optics.Types
-import XMonad.Util.Optics.Internal
 
 
 ----- Optics for XMonad.Core -----
@@ -188,6 +178,7 @@ _mousePosition f s = (\ x -> s{ mousePosition = x }) <$> f (mousePosition s)
 
 _theRoot :: Simple Lens XConf Window
 _theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
+
 
 --- XConfig Optics:
 
@@ -269,7 +260,8 @@ _mapped :: Simple Lens XState (Set Window)
 _mapped f s = (\ x -> s{ mapped = x }) <$> f (mapped s)
 
 _numberlockMask :: Simple Lens XState KeyMask
-_numberlockMask f s = (\ x -> s{ numberlockMask = x }) <$> f (numberlockMask s)
+_numberlockMask f s =
+    (\ x -> s{ numberlockMask = x }) <$> f (numberlockMask s)
 
 _waitingUnmap :: Simple Lens XState (Map Window Int)
 _waitingUnmap f s = (\ x -> s{ waitingUnmap = x }) <$> f (waitingUnmap s)
@@ -308,21 +300,25 @@ traverseStack f s =
 _current :: Simple Lens
     (StackSet tag layout window screenID screenDimensions)
     (Screen tag layout window screenID screenDimensions)
+-- the head of '_screens'
 _current f s = (\ x -> s{ current = x }) <$> f (current s)
 
 _floating :: Simple Lens
     (StackSet tag layout window screenID screenDimensions)
     (Map window RationalRect)
+-- all windows that are displayed independent of workspaces and layouts.
 _floating f s = (\ x -> s{ floating = x }) <$> f (floating s)
 
 _hidden :: Simple Lens
     (StackSet tag layout window screenID screenDimensions)
     [Workspace tag layout window]
+-- all 'Workspace's that aren't in 'Screen's.
 _hidden f s = (\ x -> s{ hidden = x }) <$> f (hidden s)
 
 _visible :: Simple Lens
     (StackSet tag layout window screenID screenDimensions)
     [Screen tag layout window screenID screenDimensions]
+-- the tail of '_screens'
 _visible f s = (\ x -> s{ visible = x }) <$> f (visible s)
 
 _screens :: Lens
@@ -330,7 +326,7 @@ _screens :: Lens
     (StackSet tag layout window screenID' screenDimensions')
     (NonEmpty (Screen tag layout window screenID screenDimensions))
     (NonEmpty (Screen tag layout window screenID' screenDimensions'))
--- This is perhaps what '_visible' /should/ be: A Lens to all visible screens, with the active one in a distinguished position.
+--  all visible 'Screen's, with the active one at the head
 _screens f s =
     (\ (x :| xs) -> s{ current = x, visible = xs })
     <$> f (current s :| visible s)

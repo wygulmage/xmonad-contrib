@@ -1,12 +1,11 @@
-
 module XMonad.Util.Optics.Internal where
 
 import Control.Monad.Reader (MonadReader, asks)
 import Data.Functor.Const (Const (..))
 import Data.Functor.Identity (Identity (..))
+import XMonad.Util.Optics.Types
 
 import Data.Coerce (coerce)
-import XMonad.Util.Optics.Types
 
 
 (%~) :: LensLike Identity ta tb a b -> (a -> b) -> ta -> tb
