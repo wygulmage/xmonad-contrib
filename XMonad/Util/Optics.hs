@@ -9,7 +9,7 @@ Stability:   unstable
 Portability: unportable
 
 
-Designed to be used with an optics library like lens or microlens (but the lenses are useful on their own as traversals)
+Designed to be used with an optics library like <https://github.com/exmett/lens lens> or <https://github.com/monadfix/microlens microlens> (but the optics are useful on their own as traversals)
 -}
 
 module XMonad.Util.Optics
@@ -38,7 +38,7 @@ Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffi
 
 -}
 
--- * XConf Lenses
+-- XConf Lenses
     ( _buttonActions
     , _xConfig
     , _currentEvent
@@ -48,7 +48,7 @@ Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffi
     , _mouseFocused
     , _mousePosition
     , _theRoot
--- * XConfig Lenses
+-- XConfig Lenses
     , _borderWidth
     , _clickJustFocuses
     , _clientMask
@@ -66,14 +66,14 @@ Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffi
     , _startupHook
     , _terminal
     , _workspaceNames
--- * XState Lenses
+-- XState Lenses
     , _dragging
     , _extensibleState
     , _mapped
     , _waitingUnmap
     , _numberlockMask
     , _windowset
--- * StackSet (WindowSet) Optics
+-- StackSet (WindowSet) Optics
     , _current
     , _floating
     , _screens
@@ -81,15 +81,15 @@ Using `XMonad.Util.Optics.Classy`, `views (_current . _stack) (maybe z f)` suffi
     , _hidden
     , _workspaces
     , _index
--- * Screen Lenses
+-- Screen Lenses
     , _screenId
     , _screenDetail
     , _workspace
--- * Workspace Lenses
+-- Workspace Lenses
     , _layout
     , _stack
     , _tag
--- * Stack (Zipper) Optics
+-- Stack (Zipper) Optics
     , _focus
     , _up
     , _down

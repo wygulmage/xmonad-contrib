@@ -1,28 +1,28 @@
+{-# OPTIONS_HADDOCK ignore-exports #-}
 {- |
-Copyright    : © 2019 Keith Wygant
-License      : Public Domain
+Description: Lenses and Traversals for XMonad types
 
-Maintainer   : Keith Wygant
-Stability    : unstable
-Portability  : unportable
+Copyright: © 2019 Keith Wygant
+License:   Public Domain
 
-Provides Lenses and Traversals for common XMonad types. 'Concrete' as opposed to 'classy': these optics are all functions, not methods.
-Designed to be used with an optics library like lens or microlens, but the lenses are useful on their own as traversals.
+Maintainer:  Keith Wygant
+Stability:   unstable
+Portability: unportable
+
+Designed to be used with an optics library like [lens](https://github.com/exmett/lens) or [microlens](https://github.com/monadfix/microlens) (but the optics are useful on their own as traversals)
 -}
 
 module XMonad.Util.Optics.Concrete
 
-{----------------------------------------------------------------------------
+{-|
+* Examples with functions from lens or microlens
 
-Examples with functions from lens or microlens
-----------------------------------------------
-
-Map a function @f@ over the current stack if it isn't empty (equivalent to 'modify''):
+Map a function f over the current stack if it isn't empty (equivalent to 'modify''):
 @
 '_index' %~ f
 @
 
-Map a function @f@ over the 'Workspace's in a 'StackSet' (equivalent to 'mapWorkspace'):
+Map a function f over the 'Workspace's in a 'StackSet' (equivalent to 'mapWorkspace'):
 @
 '_workspaces' %~ f
 @
@@ -32,19 +32,17 @@ Get a list of all 'Workspace's in a 'StackSet' (equivalent to 'workspaces'):
 toListOf '_workspaces'
 @
 
-Map a function @f@ over the layouts in a 'StackSet' (equivalent to 'mapLayout'):
+Map a function f over the layouts in a 'StackSet' (equivalent to 'mapLayout'):
+'_layouts' %~ f
+
+Equivalent to @'StackSet.with' z f@:
 @
-'_workspaces' . '_layout' %~ f
+view ('_current' . '_workspace' . '_stack' . to (maybe z f))
 @
 
-Equivalent to @'StackSet.with' z f@ and @'ask' ('with' z f)@:
-@
-views ('_current' . '_workspace' . '_stack') (maybe z f)
-@
+-}
 
-----------------------------------------------------------------------------}
-
-    -- XConf Lenses:
+-- XConf Lenses
     ( _buttonActions
     , _xConfig
     , _currentEvent
@@ -54,7 +52,7 @@ views ('_current' . '_workspace' . '_stack') (maybe z f)
     , _mouseFocused
     , _mousePosition
     , _theRoot
-    -- XConfig Lenses:
+-- XConfig Lenses
     , _borderWidth
     , _clickJustFocuses
     , _clientMask
@@ -72,14 +70,14 @@ views ('_current' . '_workspace' . '_stack') (maybe z f)
     , _startupHook
     , _terminal
     , _workspaceNames
-    -- XState
+-- XState Lenses
     , _dragging
     , _extensibleState
     , _mapped
     , _waitingUnmap
     , _numberlockMask
     , _windowset
-    -- StackSet (WindowSet)
+-- StackSet (WindowSet) Optics
     , _current
     , _floating
     , _screens
@@ -87,15 +85,15 @@ views ('_current' . '_workspace' . '_stack') (maybe z f)
     , _hidden
     , _workspaces
     , _index
-    -- Screen
+-- Screen Lenses
     , _screenId
     , _screenDetail
     , _workspace
-    -- Workspace
+-- Workspace Lenses
     , _layout
     , _stack
     , _tag
-    -- Stack (Zipper)
+-- Stack (Zipper) Optics
     , _focus
     , _up
     , _down
@@ -146,9 +144,9 @@ import XMonad.StackSet
 import XMonad.Util.Optics.Types
 
 
------ Optics for XMonad.Core -----
+-- * Optics for 'XMonad.Core'
 
---- XConf Optics:
+-- ** 'XConf' Optics:
 
 _buttonActions :: Simple Lens XConf (Map (KeyMask, Button) (Window -> X ()))
 _buttonActions f s = (\ x -> s{ buttonActions = x }) <$> f (buttonActions s)
@@ -180,7 +178,7 @@ _theRoot :: Simple Lens XConf Window
 _theRoot f s = (\ x -> s{ theRoot = x }) <$> f (theRoot s)
 
 
---- XConfig Optics:
+-- ** 'XConfig' Optics:
 
 _borderWidth :: Simple Lens (XConfig layout) Dimension
 _borderWidth f s = (\ x -> s{ borderWidth = x }) <$> f (borderWidth s)
@@ -246,7 +244,7 @@ _workspaceNames :: Simple Lens (XConfig layout) [String]
 _workspaceNames f s = (\ x -> s{ workspaces = x }) <$> f (workspaces s)
 
 
---- XState Lenses:
+-- ** 'XState' Lenses
 
 _dragging :: Simple Lens XState (Maybe (Position -> Position -> X (), X ()))
 _dragging f s = (\ x -> s{ dragging = x }) <$> f (dragging s)
@@ -270,9 +268,9 @@ _windowset :: Simple Lens XState WindowSet
 _windowset f s = (\ x -> s{ windowset = x }) <$> f (windowset s)
 
 
------ Optics for XMonad.StackSet -----
+-- * Optics for 'XMonad.StackSet'
 
---- 'Stack' (list zipper) Optics:
+-- ** 'Stack' (list zipper) Optics
 
 _focus :: Simple Lens (Stack a) a
 _focus f s = (\ x -> s{ focus = x }) <$> f (focus s)
@@ -295,7 +293,7 @@ traverseStack f s =
           infixl 4 >*<
 
 
---- StackSet Lenses:
+-- ** 'StackSet' Lenses
 
 _current :: Simple Lens
     (StackSet tag layout window screenID screenDimensions)
@@ -332,7 +330,7 @@ _screens f s =
     <$> f (current s :| visible s)
 
 
---- StackSet Traversals:
+-- ** 'StackSet' Traversals
 
 _workspaces :: Traversal
     (StackSet tag layout window screenID screenDimensions)
@@ -366,7 +364,7 @@ _index :: Simple Traversal
 _index = _current . _workspace . _stack . traverse . traverseStack
 
 
---- Screen Lenses:
+-- ** 'Screen' Lenses
 
 _screenId :: Lens
     (Screen tag layout window screenID screenDimensions)
@@ -390,7 +388,7 @@ _workspace :: Lens
 _workspace f s = (\ x -> s{ workspace = x }) <$> f (workspace s)
 
 
---- Workspace Lenses:
+-- ** 'Workspace' Lenses:
 
 _layout :: Lens
     (Workspace tag layout window) (Workspace tag layout' window)
