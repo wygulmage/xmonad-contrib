@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleInstances, MultiParamTypeClasses, CPP #-}
+{-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleInstances, MultiParamTypeClasses, BangPatterns, CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module       : XMonad.Hooks.ManageDocks
@@ -40,12 +40,14 @@ import XMonad.Util.Types
 import XMonad.Util.WindowProperties (getProp32s)
 import XMonad.Util.XUtils (fi)
 import qualified XMonad.Util.ExtensibleState as XS
-import Data.Monoid (All(..), mempty)
-import Data.Functor((<$>))
+
+import Data.Monoid (All(..))
+import Data.Functor ((<$>), (<$))
+import Data.Foldable (for_)
 
 import qualified Data.Set as S
-import qualified Data.Map as M
-import Control.Monad (when, forM_, filterM)
+import qualified Data.Map.Strict as Map
+import Control.Monad (when)
 
 -- $usage
 -- To use this module, add the following import to @~\/.xmonad\/xmonad.hs@:
@@ -91,8 +93,11 @@ docks c = c { startupHook     = docksStartupHook <+> startupHook c
             , handleEventHook = docksEventHook <+> handleEventHook c
             , manageHook      = manageDocks <+> manageHook c }
 
-newtype StrutCache = StrutCache { fromStrutCache :: M.Map Window [Strut] }
-    deriving (Eq, Typeable)
+newtype Cache = Cache (Map.Map Window Struts)
+  deriving (Eq, Typeable)
+
+getCache :: Cache -> Map.Map Window Struts
+getCache (Cache c) = c
 
 data UpdateDocks = UpdateDocks deriving Typeable
 instance Message UpdateDocks
@@ -100,25 +105,25 @@ instance Message UpdateDocks
 refreshDocks :: X ()
 refreshDocks = sendMessage UpdateDocks
 
-instance ExtensionClass StrutCache where
-  initialValue = StrutCache M.empty
+instance ExtensionClass Cache where
+  initialValue = Cache Map.empty
 
-updateStrutCache :: Window -> [Strut] -> X Bool
-updateStrutCache w strut =
-  XS.modified $ StrutCache . M.insert w strut . fromStrutCache
+cacheStruts :: Window -> Struts -> X Bool
+cacheStruts w strut =
+    XS.modified (Cache . Map.insert w strut . getCache)
 
-deleteFromStructCache :: Window -> X Bool
-deleteFromStructCache w =
-  XS.modified $ StrutCache . M.delete w . fromStrutCache
+uncacheStruts :: Window -> X Bool
+uncacheStruts w = XS.modified (Cache . Map.delete w . getCache)
 
 -- | Detects if the given window is of type DOCK and if so, reveals
 --   it, but does not manage it.
 manageDocks :: ManageHook
 manageDocks = checkDock --> (doIgnore <+> setDocksMask)
-    where setDocksMask = do
-            ask >>= \win -> liftX $ withDisplay $ \dpy ->
-                io $ selectInput dpy win (propertyChangeMask .|. structureNotifyMask)
-            mempty
+  where
+    setDocksMask = do
+        ask >>= \win -> liftX $ withDisplay $ \dpy ->
+            io $ selectInput dpy win (propertyChangeMask .|. structureNotifyMask)
+        mempty
 
 -- | Checks if a window is a DOCK or DESKTOP window
 checkDock :: Query Bool
@@ -126,63 +131,76 @@ checkDock = ask >>= \w -> liftX $ do
     dock <- getAtom "_NET_WM_WINDOW_TYPE_DOCK"
     desk <- getAtom "_NET_WM_WINDOW_TYPE_DESKTOP"
     mbr <- getProp32s "_NET_WM_WINDOW_TYPE" w
-    case mbr of
-        Just rs -> return $ any (`elem` [dock,desk]) (map fromIntegral rs)
-        _       -> return False
+    return $! maybe False (any ((`elem` [dock,desk]) . fromIntegral)) mbr
 
 -- | Whenever a new dock appears, refresh the layout immediately to avoid the
 -- new dock.
 docksEventHook :: Event -> X All
-docksEventHook (MapNotifyEvent { ev_window = w }) = do
-    whenX (runQuery checkDock w <&&> (not <$> isClient w)) $ do
-        strut <- getStrut w
-        whenX (updateStrutCache w strut) refreshDocks
-    return (All True)
-docksEventHook (PropertyEvent { ev_window = w
-                              , ev_atom = a }) = do
-    nws <- getAtom "_NET_WM_STRUT"
-    nwsp <- getAtom "_NET_WM_STRUT_PARTIAL"
-    when (a == nws || a == nwsp) $ do
-        strut <- getStrut w
-        whenX (updateStrutCache w strut) refreshDocks
-    return (All True)
-docksEventHook (DestroyWindowEvent {ev_window = w}) = do
-    whenX (deleteFromStructCache w) refreshDocks
-    return (All True)
-docksEventHook _ = return (All True)
+docksEventHook event = case event of
+    MapNotifyEvent { ev_window = w } -> do
+        whenX (runQuery checkDock w <&&> (not <$> isClient w)) $ do
+            strut <- getStruts w
+            whenX (cacheStruts w strut) refreshDocks
+        return (All True)
+    PropertyEvent { ev_window = w, ev_atom = a } -> do
+        nws <- getAtom "_NET_WM_STRUT"
+        nwsp <- getAtom "_NET_WM_STRUT_PARTIAL"
+        when (a == nws || a == nwsp) $ do
+           strut <- getStruts w
+           whenX (cacheStruts w strut) refreshDocks
+        return (All True)
+    DestroyWindowEvent {ev_window = w} -> do
+        whenX (uncacheStruts w) refreshDocks
+        return (All True)
+    _ -> return (All True)
 
 docksStartupHook :: X ()
 docksStartupHook = withDisplay $ \dpy -> do
     rootw <- asks theRoot
-    (_,_,wins) <- io $ queryTree dpy rootw
-    docks <- filterM (runQuery checkDock) wins
-    forM_ docks $ \win -> do
-        strut <- getStrut win
-        updateStrutCache win strut
+    (_, _ , wins) <- io $ queryTree dpy rootw
+    for_ wins $ \ w ->
+        whenX (runQuery checkDock w) $
+            () <$ cacheStruts w <$> getStruts w
     refreshDocks
 
--- | Gets the STRUT config, if present, in xmonad gap order
-getStrut :: Window -> X [Strut]
-getStrut w = do
+-- | Get the STRUT config, if present, in xmonad gap order.
+getStruts :: Window -> X Struts
+getStruts w = do
     msp <- getProp32s "_NET_WM_STRUT_PARTIAL" w
     case msp of
-        Just sp -> return $ parseStrutPartial sp
-        Nothing -> maybe [] parseStrut <$> getProp32s "_NET_WM_STRUT" w
- where
-    parseStrut xs@[_, _, _, _] = parseStrutPartial . take 12 $ xs ++ cycle [minBound, maxBound]
-    parseStrut _ = []
+       Just sp -> return (parseStrutPartial sp)
+       Nothing -> maybe noStruts parseStrut <$> getProp32s "_NET_WM_STRUT" w
+  where
+    parseStrut :: [CLong] -> Struts
+    parseStrut (l : r : t : b : []) =
+        Struts (fullStrut l) (fullStrut r) (fullStrut t) (fullStrut b)
+    parseStrut _ = noStruts
 
-    parseStrutPartial [l, r, t, b, ly1, ly2, ry1, ry2, tx1, tx2, bx1, bx2]
-     = filter (\(_, n, _, _) -> n /= 0)
-        [(L, l, ly1, ly2), (R, r, ry1, ry2), (U, t, tx1, tx2), (D, b, bx1, bx2)]
-    parseStrutPartial _ = []
+    parseStrutPartial :: [CLong] -> Struts
+    parseStrutPartial
+        [ l_thick   , r_thick   , t_thick   , b_thick
+        , ly1 , ly2 , ry1 , ry2 , tx1 , tx2 , bx1 , bx2 ] =
+            Struts
+                (mkStrut l_thick ly1 ly2)
+                (mkStrut r_thick ry1 ry2)
+                (mkStrut t_thick tx1 tx2)
+                (mkStrut b_thick bx1 bx2)
+    parseStrutPartial _ = noStruts
+
+    mkStrut :: CLong -> CLong -> CLong -> StrutD
+    mkStrut thic beg end
+        | thic == 0 = noStrut
+        | otherwise = StrutD thic beg end
+
+    fullStrut :: CLong -> StrutD
+    fullStrut thic = StrutD thic minBound maxBound
 
 -- | Goes through the list of windows and find the gap so that all
 --   STRUT settings are satisfied.
 calcGap :: S.Set Direction2D -> X (Rectangle -> Rectangle)
 calcGap ss = withDisplay $ \dpy -> do
     rootw <- asks theRoot
-    struts <- (filter careAbout . concat) <$> XS.gets (M.elems . fromStrutCache)
+    struts <- XS.gets (fmap careAbout . Map.elems . getCache)
 
     -- we grab the window attributes of the root window rather than checking
     -- the width of the screen because xlib caches this info and it tends to
@@ -190,7 +208,14 @@ calcGap ss = withDisplay $ \dpy -> do
     wa <- io $ getWindowAttributes dpy rootw
     let screen = r2c $ Rectangle (fi $ wa_x wa) (fi $ wa_y wa) (fi $ wa_width wa) (fi $ wa_height wa)
     return $ \r -> c2r $ foldr (reduce screen) (r2c r) struts
-  where careAbout (s,_,_,_) = s `S.member` ss
+  where
+    careAbout (Struts ml mr mt mb) =
+      Struts (care L ml) (care R mr) (care U mt) (care D mb)
+      where
+        care pos mx
+            | S.member pos ss = mx
+            | otherwise       = noStrut
+
 
 -- | Adjust layout automagically: don't cover up any docks, status
 --   bars, etc.
@@ -206,13 +231,13 @@ avoidStrutsOn :: LayoutClass l a =>
               -> ModifiedLayout AvoidStruts l a
 avoidStrutsOn ss = ModifiedLayout $ AvoidStruts (S.fromList ss)
 
-data AvoidStruts a = AvoidStruts (S.Set Direction2D) deriving ( Read, Show )
+newtype AvoidStruts a = AvoidStruts (S.Set Direction2D) deriving (Read, Show)
 
 -- | Message type which can be sent to an 'AvoidStruts' layout
 --   modifier to alter its behavior.
 data ToggleStruts = ToggleStruts
                   | ToggleStrut Direction2D
-  deriving (Read,Show,Typeable)
+  deriving (Read, Show, Typeable)
 
 instance Message ToggleStruts
 
@@ -258,10 +283,14 @@ instance LayoutModifier AvoidStruts a where
         , newSS /= ss = Just $ AvoidStruts newSS
         | Just UpdateDocks <- fromMessage m = Just as
         | otherwise = Nothing
-      where toggleAll x | S.null x = S.fromList [minBound .. maxBound]
-                        | otherwise = S.empty
-            toggleOne x xs | x `S.member` xs = S.delete x xs
-                           | otherwise   = x `S.insert` xs
+      where
+        toggleAll :: S.Set Direction2D -> S.Set Direction2D
+        toggleAll x | S.null x  = S.fromList [minBound .. maxBound]
+                    | otherwise = S.empty
+        toggleOne :: Direction2D -> S.Set Direction2D -> S.Set Direction2D
+        toggleOne x xs | x `S.member` xs = S.delete x xs
+                       | otherwise       = x `S.insert` xs
+
 
 rmWorkarea :: X ()
 rmWorkarea = withDisplay $ \dpy -> do
@@ -269,50 +298,77 @@ rmWorkarea = withDisplay $ \dpy -> do
     r <- asks theRoot
     io (deleteProperty dpy r a)
 
--- | (Direction, height\/width, initial pixel, final pixel).
-
-type Strut = (Direction2D, CLong, CLong, CLong)
-
 -- | (Initial x pixel, initial y pixel,
 --    final x pixel, final y pixel).
-
 newtype RectC = RectC (CLong, CLong, CLong, CLong) deriving (Eq,Show)
 
 -- | Invertible conversion.
-
 r2c :: Rectangle -> RectC
 r2c (Rectangle x y w h) = RectC (fi x, fi y, fi x + fi w - 1, fi y + fi h - 1)
 
 -- | Invertible conversion.
-
 c2r :: RectC -> Rectangle
 c2r (RectC (x1, y1, x2, y2)) = Rectangle (fi x1) (fi y1) (fi $ x2 - x1 + 1) (fi $ y2 - y1 + 1)
 
 
-reduce :: RectC -> Strut -> RectC -> RectC
-reduce (RectC (sx0, sy0, sx1, sy1)) (s, n, l, h) (RectC (x0, y0, x1, y1)) =
- RectC $ case s of
-    L | p (y0, y1) && qh x1     -> (mx x0 sx0, y0       , x1       , y1       )
-    R | p (y0, y1) && qv sx1 x0 -> (x0       , y0       , mn x1 sx1, y1       )
-    U | p (x0, x1) && qh y1     -> (x0       , mx y0 sy0, x1       , y1       )
-    D | p (x0, x1) && qv sy1 y0 -> (x0       , y0       , x1       , mn y1 sy1)
-    _                           -> (x0       , y0       , x1       , y1       )
- where
-    mx a b = max a (b + n)
-    mn a b = min a (b - n)
-    p r = r `overlaps` (l, h)
-    -- Filter out struts that cover the entire rectangle:
-    qh d1 = n <= d1
-    qv sd1 d0 = sd1 - n >= d0
+reduce ::
+    RectC -> -- root window coordinates
+    Struts -> -- struts
+    RectC -> -- window coordinates to reduce
+    RectC
+reduce
+    (RectC (min_x, min_y, max_x, max_y))
+    (Struts lef rig top bot)
+    (RectC (rx0, ry0, rx1, ry1))
+    = RectC (rx0', ry0', rx1', ry1')
+  where
+    -- Is it worth testing whether thickness is 0?
+    rx0' = case lef of
+        StrutD thic beg end | overlaps (beg, end) (ry0, ry1) ->
+            max rx0 (min_x + thic)
+        _ -> rx0
+
+    rx1' = case rig of
+        StrutD thic beg end | overlaps (beg, end) (ry0, ry1) ->
+            min rx1 (max_x - thic)
+        _ -> rx1
+
+    ry0' = case top of
+        StrutD thic beg end | overlaps (beg, end) (rx0, rx1) ->
+            max ry0 (min_y + thic)
+        _ -> ry0
+
+    ry1' = case bot of
+        StrutD thic beg end | overlaps (beg, end) (rx0, rx1) ->
+            min ry1 (max_y - thic)
+        _ -> ry1
+
+
+data Struts = Struts
+    !StrutD -- Left
+    !StrutD -- Right
+    !StrutD -- Top
+    !StrutD -- Bottom
+  deriving (Eq, Typeable)
+
+noStruts :: Struts
+noStruts = Struts noStrut noStrut noStrut noStrut
+
+
+--                thickness start  end
+data StrutD = StrutD !CLong !CLong !CLong
+ deriving (Eq, Typeable)
+
+noStrut :: StrutD
+noStrut = StrutD 0 minBound maxBound
+
 
 -- | Do the two ranges overlap?
 --
--- Precondition for every input range @(x, y)@: @x '<=' y@.
+-- Precondition: For every input range @(x, y)@, @x '<=' y@.
 --
--- A range @(x, y)@ is assumed to include every pixel from @x@ to @y@.
-
+-- A range @(x, y)@ includes every pixel from @x@ to @y@. E.g. range (0, 0) is one pixel long.
 overlaps :: Ord a => (a, a) -> (a, a) -> Bool
-(a, b) `overlaps` (x, y) =
-  inRange (a, b) x || inRange (a, b) y || inRange (x, y) a
+ab `overlaps` xy = not (disjoint ab xy)
   where
-  inRange (i, j) k = i <= k && k <= j
+    disjoint (a, b) (x, y) = b < x  ||  y < a
