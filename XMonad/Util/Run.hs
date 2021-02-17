@@ -39,7 +39,7 @@ import System.Posix.Process (createSession, executeFile, forkProcess)
 import Control.Concurrent (threadDelay)
 import System.IO
 import System.Process (runInteractiveProcess)
-import XMonad
+import XMonad hiding (spawnPipe)
 import Control.Monad
 import qualified GHC.IO.FD as FD
 import qualified GHC.IO.Handle.FD as FD

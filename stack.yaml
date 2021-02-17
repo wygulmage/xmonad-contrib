@@ -5,3 +5,15 @@ packages:
 
 extra-deps:
 - xmonad-0.15
+- X11-1.9.2
+
+nix:
+   packages:
+   - zlib
+   - xorg.libX11
+   - xorg.libXrandr
+   - xorg.libXScrnSaver
+   - xorg.libXext
+   - xorg.libXft
+   - pkg-config
+
