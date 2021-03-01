@@ -1,10 +1,11 @@
-resolver: lts-15.3
+resolver: lts-16.31
 
 packages:
 - ./
 
 extra-deps:
-- xmonad-0.15
+# - xmonad-0.15
+- url: https://github.com/wygulmage/xmonad/archive/k.tar.gz
 - X11-1.9.2
 
 nix:
